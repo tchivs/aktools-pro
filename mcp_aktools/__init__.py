@@ -15,7 +15,7 @@ from .cache import CacheKey
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.INFO)
 
-mcp = FastMCP(name="mcp-aktools", version="0.1.13")
+mcp = FastMCP(name="mcp-aktools", version="0.1.14")
 
 field_symbol = Field(description="股票代码")
 field_market = Field("sh", description="股票市场，仅支持: sh(上证), sz(深证), hk(港股), us(美股), 不支持加密货币")
@@ -611,7 +611,6 @@ def add_technical_indicators(df, clos, lows, high):
 
 
 def main():
-    mode = os.getenv("TRANSPORT")
     port = int(os.getenv("PORT", 0)) or 80
     parser = argparse.ArgumentParser(description="AkTools MCP Server")
     parser.add_argument("--http", action="store_true", help="Use streamable HTTP mode instead of stdio")
@@ -619,8 +618,9 @@ def main():
     parser.add_argument("--port", type=int, default=port, help=f"Port to listen on (default: {port})")
 
     args = parser.parse_args()
-    if args.http or mode == "http":
-        app = mcp.http_app()
+    mode = os.getenv("TRANSPORT") or ("http" if args.http else None)
+    if mode in ["http", "sse"]:
+        app = mcp.http_app(transport=mode)
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -630,7 +630,7 @@ def main():
             expose_headers=["mcp-session-id", "mcp-protocol-version"],
             max_age=86400,
         )
-        mcp.run(transport="http", host=args.host, port=args.port)
+        mcp.run(transport=mode, host=args.host, port=args.port)
     else:
         mcp.run()
 

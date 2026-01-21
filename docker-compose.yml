@@ -1,10 +1,11 @@
 services:
   mcp-aktools:
-    container_name: mcp_aktools
+    container_name: mcp-aktools
     image: ghcr.nju.edu.cn/aahl/mcp-aktools
     ports:
       - 8808:80
     environment:
       TZ: Asia/Shanghai
+      TRANSPORT: ${TRANSPORT:-http} # http/sse
       UV_INDEX_URL: https://mirrors.ustc.edu.cn/pypi/simple
     restart: always
