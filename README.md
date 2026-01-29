@@ -1,5 +1,14 @@
 # 📈 AkTools Pro MCP Server
 
+<p align="left">
+    <a href="https://github.com/tchivs/mcp-aktools/releases"><img src="https://img.shields.io/github/v/release/tchivs/mcp-aktools?color=blue&label=version" alt="Version"></a>
+    <a href="https://github.com/tchivs/mcp-aktools/blob/main/LICENSE"><img src="https://img.shields.io/github/license/tchivs/mcp-aktools?color=orange" alt="License"></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python"></a>
+    <a href="https://github.com/jlowin/fastmcp"><img src="https://img.shields.io/badge/Powered%20by-FastMCP-blue" alt="FastMCP"></a>
+    <a href="https://github.com/tchivs/mcp-aktools/stargazers"><img src="https://img.shields.io/github/stars/tchivs/mcp-aktools" alt="GitHub stars"></a>
+    <a href="https://github.com/tchivs/mcp-aktools/network/members"><img src="https://img.shields.io/github/forks/tchivs/mcp-aktools" alt="GitHub forks"></a>
+</p>
+
 <!-- mcp-name: io.github.tchivs/aktools-pro -->
 基于 [akshare](https://github.com/akfamily/akshare) 的增强型 MCP (Model Context Protocol) 服务器，为 AI Agent 提供专业的金融数据查询、深度分析及实战交易技能。
 
