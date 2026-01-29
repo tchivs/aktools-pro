@@ -2,11 +2,36 @@ import requests
 import pandas as pd
 import time
 import json
-from typing import Callable, cast
+from typing import Any, Callable, cast
 from pydantic import Field
 from ..server import mcp
 from ..shared.constants import OKX_BASE_URL, BINANCE_BASE_URL, USER_AGENT
 from ..shared.indicators import add_technical_indicators
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Best-effort numeric parsing for exchange APIs.
+
+    Some OKX endpoints may return empty strings for numeric fields.
+    """
+
+    if value in (None, ""):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    """Best-effort int parsing for exchange APIs."""
+
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 @mcp.tool(
@@ -355,9 +380,10 @@ def okx_funding_rate(
         return f"未找到 {symbol} 的资金费率数据"
 
     item = items[0]
-    current_rate = float(item.get("fundingRate", 0)) * 100
-    next_rate = float(item.get("nextFundingRate", 0)) * 100
-    funding_time = pd.to_datetime(int(item.get("fundingTime", 0)), unit="ms")
+    current_rate = _safe_float(item.get("fundingRate")) * 100
+    next_rate = _safe_float(item.get("nextFundingRate")) * 100
+    funding_ts = _safe_int(item.get("fundingTime"))
+    funding_time = pd.to_datetime(funding_ts, unit="ms") if funding_ts else "N/A"
 
     sentiment = "多头拥挤" if current_rate > 0.05 else "空头占优" if current_rate < -0.05 else "中性"
 
