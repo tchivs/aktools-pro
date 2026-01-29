@@ -176,6 +176,3 @@ uv run aktools-pro inspect
 <p align="center">
     Built with ❤️ for the Quantitative Trading Community
 </p>
-
-[![FastMCP](https://img.shields.io/badge/Powered%20by-FastMCP-blue)](https://github.com/jlowin/fastmcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
