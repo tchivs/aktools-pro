@@ -22,6 +22,9 @@ jobs:
           - linux/amd64
           - linux/arm64
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Prepare
         run: |
           platform=${{ matrix.platform }}
@@ -29,7 +32,7 @@ jobs:
           if [[ "${{ github.ref_name }}" == v* ]]; then
             echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
           else
-            echo "VERSION=0.0.0+${{ github.sha }}" >> $GITHUB_ENV
+            echo "VERSION=0.0.0+${GITHUB_SHA::7}" >> $GITHUB_ENV
           fi
 
       - name: Docker meta
