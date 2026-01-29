@@ -109,10 +109,13 @@ docker-compose up -d
 ### 1. 提示词工作流 (Prompts)
 - `analyze-stock`: 触发资深分析师人格，对个股进行技术面+基本面+消息面的全方位诊断。
 - `market-pulse`: 研判大盘脉搏，分析涨停家数与板块资金流向。
+- `analyze-crypto`: 触发加密货币分析师人格，对币种进行技术面+情绪面的深度分析。
+- `crypto-pulse`: 研判币圈脉搏，分析恐惧贪婪指数、资金费率与持仓量。
 
 ### 2. 知识库资源 (Resources)
 - `skill://trading/logic/technical-analysis`: 内置 MACD、RSI、布林带等指标的专业解读标准。
 - `skill://trading/strategy/risk-management`: 内置仓位管理与止损风险控制准则。
+- `skill://crypto/logic/analysis-sop`: 内置加密货币分析 SOP（多空比、资金费率、RSI 阈值解读）。
 
 ### 3. 复合工具 (Composite Tools)
 - `composite_stock_diagnostic`: 一键获取聚合后的诊断报告。
@@ -142,9 +145,16 @@ docker-compose up -d
 <details>
 <summary><strong>₿ 加密货币</strong></summary>
 
-- `okx_prices`: K线数据
+- `okx_prices`: K线数据 (含技术指标)
 - `okx_loan_ratios`: 杠杆多空比
+- `okx_taker_volume`: 主动买卖量
+- `okx_funding_rate`: 永续合约资金费率
+- `okx_open_interest`: 合约持仓量
+- `fear_greed_index`: 市场恐惧贪婪指数
 - `binance_ai_report`: 币安 AI 深度报告
+- `crypto_composite_diagnostic`: 一键综合诊断
+- `draw_crypto_chart`: ASCII 走势图
+- `backtest_crypto_strategy`: 策略回测
 
 </details>
 
