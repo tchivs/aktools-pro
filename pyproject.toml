@@ -14,11 +14,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/aahl/mcp-aktools"
-Repository = "https://github.com/aahl/mcp-aktools.git"
+Homepage = "https://github.com/tchivs/mcp-aktools"
+Repository = "https://github.com/tchivs/mcp-aktools.git"
 
 [project.scripts]
-mcp-aktools = "mcp_aktools:main"
+aktools-pro = "mcp_aktools:main"
 
 [tool.ruff]
 line-length = 120

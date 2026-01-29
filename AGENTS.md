@@ -1,6 +1,6 @@
 # AGENTS.md - Cross-Agent Development Guide
 
-This document defines the Standard Operating Procedures (SOPs) for Agentic assistants (OpenCode Sisyphus, Claude Code, and Codex/Copilot) operating in the `mcp-aktools` repository.
+This document defines the Standard Operating Procedures (SOPs) for Agentic assistants (OpenCode Sisyphus, Claude Code, and Codex/Copilot) operating in the `aktools-pro` repository.
 
 ## 🤖 Multi-Agent Compatibility Protocol
 
@@ -44,8 +44,8 @@ Before any implementation, classify the task to select the right `delegate_task`
 ### Phase 4: Verification & Shipping
 - **LSP Check**: Run `lsp_diagnostics` on `mcp_aktools/__init__.py` after any edit.
 - **Runtime Test**:
-    1. Run `uv run mcp-aktools` (Stdio mode) to ensure the server starts without syntax errors.
-    2. (Optional) Use `uv run mcp-aktools --http` to verify SSE/HTTP transport if modified.
+    1. Run `uv run aktools-pro` (Stdio mode) to ensure the server starts without syntax errors.
+    2. (Optional) Use `uv run aktools-pro --http` to verify SSE/HTTP transport if modified.
 - **Git Protocol**: Follow `git-master` skills for atomic commits.
 
 ## 🧠 Specialized Personas & Skills
@@ -71,6 +71,6 @@ When performing analysis, equip the agent with:
 
 ## 🚀 Common Commands
 - **Sync**: `uv sync`
-- **Run**: `uv run mcp-aktools`
-- **Build**: `python3 -m build`
-- **Inspect**: `uv run mcp-aktools inspect` (to list all registered tools/prompts/resources).
+- **Run**: `uv run aktools-pro`
+- **Inspect**: `uv run aktools-pro inspect` (to list all registered tools/prompts/resources).
+

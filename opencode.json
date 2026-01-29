@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "aktools-pro": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        ".",
+        "aktools-pro"
+      ]
+    }
+  }
+}

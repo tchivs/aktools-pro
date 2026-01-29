@@ -1,23 +1,23 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.aahl/mcp-aktools",
-  "title": "AkTools MCP Server",
-  "description": "MCP Server for stock and crypto",
+  "name": "io.github.tchivs/aktools-pro",
+  "title": "AkTools Pro MCP Server",
+  "description": "🚀 AkTools Pro: 增强型金融 MCP 服务器。内置策略回测、模拟盘管理及实时异动监控。",
   "repository": {
-    "url": "https://github.com/aahl/mcp-aktools",
+    "url": "https://github.com/tchivs/mcp-aktools",
     "source": "github"
   },
-  "version": "0.1.14",
+  "version": "0.2.1",
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "mcp-aktools",
-      "version": "0.1.14",
+      "identifier": "aktools-pro",
+      "version": "0.2.1",
       "transport": {"type": "stdio"}
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/aahl/mcp-aktools:latest",
+      "identifier": "ghcr.io/tchivs/aktools-pro:latest",
       "transport": {"type": "stdio"}
     }
   ]
