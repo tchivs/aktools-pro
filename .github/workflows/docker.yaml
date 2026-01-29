@@ -26,6 +26,11 @@ jobs:
         run: |
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" == v* ]]; then
+            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=0.0.0+${{ github.sha }}" >> $GITHUB_ENV
+          fi
 
       - name: Docker meta
         id: meta
@@ -56,7 +61,7 @@ jobs:
           tags: |
             ${{ env.GITHUB_CR_REPO }}
           build-args: |
-            SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.ref_name }}
+            SETUPTOOLS_SCM_PRETEND_VERSION=${{ env.VERSION }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
