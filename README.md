@@ -1,13 +1,24 @@
 # 📈 AkTools Pro MCP Server
 
 <!-- mcp-name: io.github.tchivs/aktools-pro -->
-基于 [akshare](https://github.com/akfamily/akshare) 的增强型 MCP (Model Context Protocol) 服务器。
+基于 [akshare](https://github.com/akfamily/akshare) 的增强型 MCP (Model Context Protocol) 服务器，为 AI Agent 提供专业的金融数据查询、深度分析及实战交易技能。
+
+## 🌟 核心亮点
+
+- 🧠 **不仅是工具，更是技能**: 支持 MCP Prompts 和 Resources，内置金融分析 SOP。
+- 💹 **全市场覆盖**: A股、港股、美股、加密货币数据一站式获取。
+- 📊 **可视化增强**: 支持 ASCII 字符走势图，让 AI 的分析更直观。
+- 🛡️ **双层缓存**: 内存 + 磁盘双层缓存机制，极致响应速度，保护数据源。
+- 💼 **实战模拟**: 内置模拟持仓管理，支持 AI 自动跟踪盈亏。
+- 🧪 **策略回测**: 内置极简回测引擎，支持验证均线、RSI、MACD 等交易策略。
+
+---
 
 ## 🚀 快速开始 (aktools-pro)
 
 ### 方式 1: 自动安装 (推荐)
 
-在你的 AI 终端中直接运行以下指令，从你的 GitHub Fork 版本安装：
+在你的 AI 终端中根据客户端类型执行：
 
 #### **OpenCode (Sisyphus)**
 直接运行交互式命令：
@@ -28,25 +39,9 @@ claude mcp add aktools-pro -- uvx --from git+https://github.com/tchivs/mcp-aktoo
 #### **Cursor**
 手动在 `mcpServers` 配置中添加：
 ```json
-"my-aktools": {
+"aktools-pro": {
   "command": "uvx",
-  "args": ["--from", "git+https://github.com/tchivs/mcp-aktools.git", "tchivs-aktools"]
-}
-```
-
-### 方式 2: 手动配置 (uvx)
-```json
-{
-  "mcpServers": {
-    "aktools": {
-      "command": "uvx",
-      "args": ["mcp-aktools"],
-      "env": {
-        "OKX_BASE_URL": "https://okx.4url.cn", 
-        "BINANCE_BASE_URL": "https://bian.4url.cn"
-      }
-    }
-  }
+  "args": ["--from", "git+https://github.com/tchivs/mcp-aktools.git", "aktools-pro"]
 }
 ```
 
@@ -65,13 +60,9 @@ claude mcp add aktools-pro -- uvx --from git+https://github.com/tchivs/mcp-aktoo
 - `skill://trading/strategy/risk-management`: 内置仓位管理与止损风险控制准则。
 
 ### 3. 复合工具 (Composite Tools)
-- `composite_stock_diagnostic`: 一键获取聚合后的诊断报告，减少 AI 多次调用的幻觉。
+- `composite_stock_diagnostic`: 一键获取聚合后的诊断报告。
 - `draw_ascii_chart`: 在聊天框中直接生成价格趋势字符图。
 - `market_anomaly_scan`: 实时扫描“火箭发射”、“大笔买入”等市场异动。
-- `backtest_strategy`: 基于历史数据验证交易策略（SMA/RSI/MACD）。
-- `sector_valuation` / `sector_rotation`: 研判行业估值水平与资金轮动方向。
-- `northbound_funds`: 跟踪北向资金（聪明钱）的每日流入流出。
-- `institutional_holding_summary`: 汇总个股的机构持仓深度信息。
 - `backtest_strategy`: 基于历史数据验证交易策略（SMA/RSI/MACD）。
 - `sector_valuation` / `sector_rotation`: 研判行业估值水平与资金轮动方向。
 - `northbound_funds`: 跟踪北向资金（聪明钱）的每日流入流出。
@@ -122,10 +113,10 @@ claude mcp add aktools-pro -- uvx --from git+https://github.com/tchivs/mcp-aktoo
 uv sync
 
 # 本地运行 (stdio)
-uv run mcp-aktools
+uv run aktools-pro
 
 # 检查技能注册情况
-uv run mcp-aktools inspect
+uv run aktools-pro inspect
 ```
 
 ---
