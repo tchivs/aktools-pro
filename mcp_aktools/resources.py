@@ -71,3 +71,54 @@ def resource_pm_analysis():
        - 金银比 > 80 → 白银相对低估，可关注白银
        - 金银比 < 60 → 白银相对高估，可关注黄金
     """
+
+
+@mcp.resource("stock://{symbol}/analysis")
+def stock_dynamic_analysis(symbol: str) -> str:
+    """动态生成某只股票的专属分析指南"""
+    return f"""
+# {symbol} 专属分析建议
+
+## 推荐工具链
+1. `stock_prices(symbol="{symbol}", limit=30)` - 获取近期走势
+2. `stock_news(symbol="{symbol}", limit=5)` - 获取相关新闻
+3. `draw_ascii_chart(symbol="{symbol}")` - 可视化趋势
+4. `stock_indicators_a(symbol="{symbol}")` - 财务指标
+
+## 关键指标关注
+- MACD 金叉/死叉信号
+- RSI 超买(>70)/超卖(<30)
+- 布林带突破
+- 成交量异常放大
+
+## 分析流程
+1. 先用 stock_prices 获取技术面数据
+2. 用 stock_indicators 获取基本面数据
+3. 用 stock_news 获取消息面
+4. 综合三者给出判断
+"""
+
+
+@mcp.resource("market://{sector}/flow")
+def sector_flow_guide(sector: str) -> str:
+    """板块资金流向分析指南"""
+    return f"""
+# {sector} 板块资金流向分析
+
+## 推荐工具
+1. `stock_sector_fund_flow_rank(cate="行业资金流")` - 获取行业资金流向
+2. `stock_zt_pool_em()` - 查看板块涨停股
+3. `northbound_funds()` - 北向资金动向
+
+## 分析要点
+- 主力净流入 > 0 表示资金看好
+- 连续3日净流入为强势信号
+- 结合北向资金判断外资态度
+- 涨停股数量反映板块热度
+
+## 操作建议
+1. 先用 stock_sector_fund_flow_rank 查看整体资金流向
+2. 用 stock_zt_pool_em 找出板块龙头
+3. 用 northbound_funds 确认外资态度
+4. 综合判断板块强弱
+"""
