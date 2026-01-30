@@ -111,11 +111,14 @@ docker-compose up -d
 - `market-pulse`: 研判大盘脉搏，分析涨停家数与板块资金流向。
 - `analyze-crypto`: 触发加密货币分析师人格，对币种进行技术面+情绪面的深度分析。
 - `crypto-pulse`: 研判币圈脉搏，分析恐惧贪婪指数、资金费率与持仓量。
+- `analyze-precious-metal`: 触发贵金属分析师人格，对黄金/白银进行全方位诊断。
+- `precious-metal-pulse`: 研判贵金属市场脉搏，分析ETF持仓与库存变化。
 
 ### 2. 知识库资源 (Resources)
 - `skill://trading/logic/technical-analysis`: 内置 MACD、RSI、布林带等指标的专业解读标准。
 - `skill://trading/strategy/risk-management`: 内置仓位管理与止损风险控制准则。
 - `skill://crypto/logic/analysis-sop`: 内置加密货币分析 SOP（多空比、资金费率、RSI 阈值解读）。
+- `skill://trading/logic/precious-metals-analysis`: 内置贵金属分析SOP（内外盘价差、ETF持仓、期现基差解读）。
 
 ### 3. 复合工具 (Composite Tools)
 - `composite_stock_diagnostic`: 一键获取聚合后的诊断报告。
@@ -155,6 +158,19 @@ docker-compose up -d
 - `crypto_composite_diagnostic`: 一键综合诊断
 - `draw_crypto_chart`: ASCII 走势图
 - `backtest_crypto_strategy`: 策略回测
+
+</details>
+
+<details>
+<summary><strong>🥇 贵金属</strong></summary>
+
+- `pm_spot_prices`: 上海金交所现货价格
+- `pm_international_prices`: 国际贵金属价格 (伦敦金/银, COMEX)
+- `pm_etf_holdings`: ETF持仓变化 (SPDR GLD, iShares SLV)
+- `pm_comex_inventory`: COMEX库存数据
+- `pm_basis`: 期现基差
+- `pm_benchmark_price`: 上海金/银基准价
+- `pm_composite_diagnostic`: 贵金属综合诊断
 
 </details>
 
