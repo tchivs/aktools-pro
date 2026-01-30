@@ -4,6 +4,7 @@ from typing import Callable, cast
 
 import akshare as ak
 import pandas as pd
+from fastmcp import Context
 from pydantic import Field
 
 from mcp_aktools.server import mcp
@@ -174,10 +175,14 @@ def pm_benchmark_price(
     title="贵金属综合诊断",
     description="复合技能：一键获取贵金属的价格走势、ETF持仓、COMEX库存、期现基差等综合诊断数据",
 )
-def pm_composite_diagnostic(
+async def pm_composite_diagnostic(
     metal: str = Field("gold", description="金属类型，支持: gold(黄金), silver(白银)"),
+    ctx: Context | None = None,
 ):
     """贵金属综合诊断"""
+    if ctx:
+        await ctx.report_progress(0, 100, "开始贵金属综合诊断...")
+
     # 确定品种代码
     if metal.lower() == "gold":
         sge_symbol = "Au99.99"
@@ -198,12 +203,32 @@ def pm_composite_diagnostic(
     pm_basis_fn = cast(Callable[..., str], pm_basis)
     pm_benchmark_fn = cast(Callable[..., str], pm_benchmark_price)
 
+    if ctx:
+        await ctx.report_progress(15, 100, "获取现货价格...")
     spot_data = pm_spot_fn(symbol=sge_symbol, limit=10)
+
+    if ctx:
+        await ctx.report_progress(30, 100, "获取国际价格...")
     intl_data = pm_intl_fn(symbol=intl_symbol)
+
+    if ctx:
+        await ctx.report_progress(45, 100, "获取ETF持仓...")
     etf_data = pm_etf_fn(metal=metal, limit=10)
+
+    if ctx:
+        await ctx.report_progress(60, 100, "获取COMEX库存...")
     comex_data = pm_comex_fn(metal=metal_cn, limit=10)
+
+    if ctx:
+        await ctx.report_progress(75, 100, "获取期现基差...")
     basis_data = pm_basis_fn(metal=metal_cn)
+
+    if ctx:
+        await ctx.report_progress(90, 100, "获取基准价格...")
     benchmark_data = pm_benchmark_fn(metal=metal, limit=10)
+
+    if ctx:
+        await ctx.report_progress(100, 100, "诊断完成")
 
     return (
         f"--- 贵金属综合诊断: {metal_cn} ---\n\n"

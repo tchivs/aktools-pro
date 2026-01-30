@@ -1,11 +1,14 @@
-import requests
-import pandas as pd
-import time
 import json
+import time
 from typing import Any, Callable, cast
+
+import pandas as pd
+import requests
+from fastmcp import Context
 from pydantic import Field
+
 from ..server import mcp
-from ..shared.constants import OKX_BASE_URL, BINANCE_BASE_URL, USER_AGENT
+from ..shared.constants import BINANCE_BASE_URL, OKX_BASE_URL, USER_AGENT
 from ..shared.indicators import add_technical_indicators
 
 
@@ -197,19 +200,34 @@ def binance_ai_report(
     title="加密货币综合诊断",
     description="复合技能：一键获取加密货币技术面、情绪面和AI报告的综合诊断数据",
 )
-def crypto_composite_diagnostic(
+async def crypto_composite_diagnostic(
     symbol: str = Field("BTC", description="币种，格式: BTC 或 ETH"),
+    ctx: Context | None = None,
 ):
+    if ctx:
+        await ctx.report_progress(0, 100, "开始加密货币诊断...")
+
     inst_id = f"{symbol}-USDT"
     okx_prices_fn = cast(Callable[..., str], okx_prices)
     okx_loan_fn = cast(Callable[..., str], okx_loan_ratios)
     okx_taker_fn = cast(Callable[..., str], okx_taker_volume)
     binance_fn = cast(Callable[..., str], binance_ai_report)
 
+    if ctx:
+        await ctx.report_progress(25, 100, "获取价格数据...")
     price_data = okx_prices_fn(instId=inst_id, bar="4H", limit=10)
+
+    if ctx:
+        await ctx.report_progress(50, 100, "获取杠杆多空比...")
     loan_data = okx_loan_fn(symbol=symbol, period="1H")
+
+    if ctx:
+        await ctx.report_progress(75, 100, "获取主动买卖量...")
     taker_data = okx_taker_fn(symbol=symbol, period="1H", instType="SPOT")
     ai_report = binance_fn(symbol=symbol)
+
+    if ctx:
+        await ctx.report_progress(100, 100, "诊断完成")
 
     return (
         f"--- 加密货币综合诊断: {symbol} ---\n\n"
@@ -443,7 +461,7 @@ def fear_greed_index():
     ts = pd.to_datetime(int(current.get("timestamp", 0)), unit="s")
 
     lines = [
-        f"--- 加密货币恐惧贪婪指数 ---",
+        "--- 加密货币恐惧贪婪指数 ---",
         f"当前指数: {value} ({classification})",
         f"更新时间: {ts}",
         "",

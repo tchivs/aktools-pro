@@ -1,28 +1,55 @@
 from io import StringIO
 from typing import Callable, cast
+
 import pandas as pd
+from fastmcp import Context
 from pydantic import Field
+
 from ..server import mcp
-from ..shared.fields import field_symbol, field_market
-from .stocks import stock_prices, stock_info, stock_news
+from ..shared.fields import field_market, field_symbol
+from .stocks import stock_info, stock_news, stock_prices
 
 
 @mcp.tool(
     title="个股综合诊断",
     description="复合技能：一键获取技术面、基本面和消息面的综合诊断数据",
 )
-def composite_stock_diagnostic(symbol: str = field_symbol, market: str = field_market):
+async def composite_stock_diagnostic(
+    symbol: str = field_symbol,
+    market: str = field_market,
+    ctx: Context | None = None,
+):
+    if ctx:
+        await ctx.report_progress(0, 100, "开始综合诊断...")
+
     # 内部组合调用
     stock_prices_fn = cast(Callable[..., str], stock_prices)
     stock_info_fn = cast(Callable[..., str], stock_info)
     stock_news_fn = cast(Callable[..., str], stock_news)
+
+    if ctx:
+        await ctx.report_progress(20, 100, "获取历史价格...")
     price_data = stock_prices_fn(symbol, market, limit=5)
+
+    if ctx:
+        await ctx.report_progress(40, 100, "获取基本面信息...")
     fundamental = stock_info_fn(symbol, market)
+
+    if ctx:
+        await ctx.report_progress(60, 100, "获取新闻动态...")
     news = stock_news_fn(symbol, limit=3)
 
-    return (
+    if ctx:
+        await ctx.report_progress(80, 100, "汇总分析结果...")
+
+    result = (
         f"--- 综合诊断报告: {symbol} ---\n\n[近期价格]\n{price_data}\n\n[基本面]\n{fundamental}\n\n[核心新闻]\n{news}"
     )
+
+    if ctx:
+        await ctx.report_progress(100, 100, "诊断完成")
+
+    return result
 
 
 @mcp.tool(
