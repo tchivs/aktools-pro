@@ -186,6 +186,120 @@ AkTools Pro 提供了 61 个专业工具，分为以下核心模块：
 - **Portfolio**: `portfolio_add` (模拟交易), `portfolio_view` (盈亏分析), `portfolio_chart` (盈亏图表), `trading_suggest` (AI建议)
 - **Cache**: `cache_status` (缓存状态), `cache_clear` (清理缓存)
 
+
+## 📋 完整工具列表
+
+<details>
+<summary><strong>点击展开 61 个工具的完整列表</strong></summary>
+
+### 📈 股票 & 市场
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `search` | 根据股票名称、公司名称等关键词查找股票代码 |
+| `stock_info` | 根据股票代码和市场获取股票基本信息 |
+| `stock_prices` | 获取股票历史价格及技术指标 (MACD/RSI/KDJ/BOLL) |
+| `stock_news` | 获取指定个股最近新闻动态 |
+| `stock_news_global` | 获取最新的全球财经快讯 |
+| `stock_indicators_a` | 获取A股财务报告关键指标 |
+| `stock_indicators_hk` | 获取港股财务报告关键指标 |
+| `stock_indicators_us` | 获取美股财务报告关键指标 |
+| `institutional_holding_summary` | 获取个股最新机构持仓与持股比例 |
+| `stock_zt_pool_em` | 获取A股所有涨停股票 |
+| `stock_zt_pool_strong_em` | 获取A股强势股池数据 |
+| `stock_lhb_ggtj_sina` | 获取A股龙虎榜个股上榜统计 |
+| `stock_sector_fund_flow_rank` | 获取A股行业资金流向数据 |
+| `northbound_funds` | 获取北向资金近10个交易日数据 |
+| `sector_valuation` | 获取申万一级行业估值(P/E、P/B)概览 |
+| `sector_rotation` | 基于行业资金流与涨跌幅识别短期强势行业 |
+| `market_anomaly_scan` | 扫描A股市场实时异动信号 (火箭发射、大笔买入等) |
+| `get_current_time` | 获取当前时间及A股交易日信息 |
+
+### ₿ 加密货币
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `okx_prices` | 获取OKX加密货币历史K线数据及技术指标 |
+| `okx_loan_ratios` | 获取加密货币杠杆多空比 |
+| `okx_taker_volume` | 获取加密货币主动买卖交易量 |
+| `okx_funding_rate` | 获取永续合约资金费率 |
+| `okx_open_interest` | 获取永续合约持仓量数据 |
+| `binance_ai_report` | 获取币安AI分析报告 (推荐) |
+| `fear_greed_index` | 获取加密货币恐惧贪婪指数 (0-100) |
+| `crypto_composite_diagnostic` | 一键获取加密货币综合诊断数据 |
+| `draw_crypto_chart` | 生成加密货币ASCII走势图 |
+| `backtest_crypto_strategy` | 加密货币策略回测 (SMA/RSI/MACD) |
+
+### 🥇 贵金属
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `pm_spot_prices` | 获取上海金交所现货历史价格及技术指标 |
+| `pm_international_prices` | 获取国际贵金属实时价格 (伦敦金/COMEX) |
+| `pm_etf_holdings` | 获取全球黄金/白银ETF持仓量变化 |
+| `pm_comex_inventory` | 获取COMEX交易所库存数据 |
+| `pm_basis` | 获取贵金属期现基差数据 |
+| `pm_benchmark_price` | 获取上海金银基准价格 |
+| `pm_composite_diagnostic` | 一键获取贵金属综合诊断数据 |
+
+### 💱 外汇
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `fx_spot_rates` | 获取主要货币对实时汇率 (USD/EUR/JPY/GBP等) |
+| `fx_history` | 获取指定货币对历史汇率数据 |
+| `fx_cross_rates` | 获取主要货币交叉汇率矩阵 |
+
+### 🏗️ 期货
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `futures_prices` | 获取国内期货主力合约历史价格及技术指标 |
+| `futures_inventory` | 获取期货品种仓单库存数据 |
+| `futures_basis` | 获取期货与现货价格基差数据 |
+| `futures_positions` | 获取期货主力合约机构持仓排名 |
+
+### 🏦 基金
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `fund_info` | 获取基金基本信息 (名称/类型/规模/管理人) |
+| `fund_nav` | 获取基金历史净值数据 |
+| `fund_holdings` | 获取基金股票持仓明细 |
+| `fund_ranking` | 获取基金排行榜 (按类型/收益率筛选) |
+| `etf_prices` | 获取ETF基金历史价格数据 |
+
+### 🌍 宏观经济
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `macro_gdp` | 获取中国GDP季度数据 |
+| `macro_cpi` | 获取中国CPI月度数据 |
+| `macro_pmi` | 获取中国PMI制造业指数 |
+| `macro_interest_rate` | 获取LPR贷款市场报价利率 |
+| `macro_money_supply` | 获取货币供应量(M0/M1/M2)数据 |
+
+### 🧠 分析 & 回测
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `composite_stock_diagnostic` | 一键获取个股技术面/基本面/消息面综合诊断 |
+| `draw_ascii_chart` | 生成股票ASCII走势图 |
+| `backtest_strategy` | 策略回测 (SMA/RSI/MACD/BOLL/MA_CROSS/KDJ) |
+| `trading_suggest` | 基于AI分析给出投资建议 |
+
+### 💼 模拟盘 & 系统
+
+| 工具名 | 功能说明 |
+|--------|----------|
+| `portfolio_add` | 添加模拟持仓记录 |
+| `portfolio_view` | 查看模拟盘实时盈亏 |
+| `portfolio_chart` | 生成持仓盈亏ASCII柱状图 |
+| `cache_status` | 查看缓存状态 |
+| `cache_clear` | 清理指定或所有缓存 |
+
+</details>
+
 ## 💡 实战示例
 
 让 AI 帮你分析一只股票，体验 **AkTools Pro** 的强大：
