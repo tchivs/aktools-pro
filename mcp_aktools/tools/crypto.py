@@ -66,6 +66,7 @@ def okx_prices(
         return pd.DataFrame()
     dfs.columns = ["时间", "开盘", "最高", "最低", "收盘", "成交量", "成交额", "成交额USDT", "K线已完结"]
     dfs.sort_values("时间", inplace=True)
+    dfs["时间"] = pd.to_numeric(dfs["时间"], errors="coerce")
     dfs["时间"] = pd.to_datetime(dfs["时间"], errors="coerce", unit="ms")
     dfs["开盘"] = pd.to_numeric(dfs["开盘"], errors="coerce")
     dfs["最高"] = pd.to_numeric(dfs["最高"], errors="coerce")
@@ -118,6 +119,7 @@ def okx_loan_ratios(
     if dfs.empty:
         return pd.DataFrame()
     dfs.columns = ["时间", "多空比"]
+    dfs["时间"] = pd.to_numeric(dfs["时间"], errors="coerce")
     dfs["时间"] = pd.to_datetime(dfs["时间"], errors="coerce", unit="ms")
     dfs["多空比"] = pd.to_numeric(dfs["多空比"], errors="coerce")
     return dfs.to_csv(index=False, float_format="%.2f").strip()
@@ -146,6 +148,7 @@ def okx_taker_volume(
     if dfs.empty:
         return pd.DataFrame()
     dfs.columns = ["时间", "卖出量", "买入量"]
+    dfs["时间"] = pd.to_numeric(dfs["时间"], errors="coerce")
     dfs["时间"] = pd.to_datetime(dfs["时间"], errors="coerce", unit="ms")
     dfs["卖出量"] = pd.to_numeric(dfs["卖出量"], errors="coerce")
     dfs["买入量"] = pd.to_numeric(dfs["买入量"], errors="coerce")
