@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Any, Callable, cast
+from typing import Any
 
 import pandas as pd
 import requests
@@ -211,23 +211,19 @@ async def crypto_composite_diagnostic(
         await ctx.report_progress(0, 100, "开始加密货币诊断...")
 
     inst_id = f"{symbol}-USDT"
-    okx_prices_fn = cast(Callable[..., str], okx_prices)
-    okx_loan_fn = cast(Callable[..., str], okx_loan_ratios)
-    okx_taker_fn = cast(Callable[..., str], okx_taker_volume)
-    binance_fn = cast(Callable[..., str], binance_ai_report)
 
     if ctx:
         await ctx.report_progress(25, 100, "获取价格数据...")
-    price_data = okx_prices_fn(instId=inst_id, bar="4H", limit=10)
+    price_data = okx_prices.fn(instId=inst_id, bar="4H", limit=10)
 
     if ctx:
         await ctx.report_progress(50, 100, "获取杠杆多空比...")
-    loan_data = okx_loan_fn(symbol=symbol, period="1H")
+    loan_data = okx_loan_ratios.fn(symbol=symbol, period="1H")
 
     if ctx:
         await ctx.report_progress(75, 100, "获取主动买卖量...")
-    taker_data = okx_taker_fn(symbol=symbol, period="1H", instType="SPOT")
-    ai_report = binance_fn(symbol=symbol)
+    taker_data = okx_taker_volume.fn(symbol=symbol, period="1H", instType="SPOT")
+    ai_report = binance_ai_report.fn(symbol=symbol)
 
     if ctx:
         await ctx.report_progress(100, 100, "诊断完成")
@@ -250,9 +246,8 @@ def draw_crypto_chart(
     bar: str = Field("1D", description="K线周期: 1H/4H/1D"),
 ):
     inst_id = f"{symbol}-USDT"
-    okx_prices_fn = cast(Callable[..., str], okx_prices)
-    data = okx_prices_fn(instId=inst_id, bar=bar, limit=20)
-    if not data or isinstance(data, pd.DataFrame):
+    data = okx_prices.fn(instId=inst_id, bar=bar, limit=20)
+    if not isinstance(data, str) or not data:
         return "数据不足，无法绘图"
 
     lines = data.strip().split("\n")[1:]
@@ -303,10 +298,9 @@ def backtest_crypto_strategy(
     from io import StringIO
 
     inst_id = f"{symbol}-USDT"
-    okx_prices_fn = cast(Callable[..., str], okx_prices)
-    data = okx_prices_fn(instId=inst_id, bar=bar, limit=limit)
+    data = okx_prices.fn(instId=inst_id, bar=bar, limit=limit)
 
-    if not data or not isinstance(data, str):
+    if not isinstance(data, str) or not data:
         return f"未找到可回测数据: {symbol}"
 
     try:
