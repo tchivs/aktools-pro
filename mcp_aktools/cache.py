@@ -1,5 +1,8 @@
 import pathlib
+import pathlib
 import sys
+
+import atexit
 
 import diskcache
 from cachetools import TTLCache
@@ -38,9 +41,34 @@ class CacheKey:
         self.cache1.pop(self.key, None)
         self.cache2.delete(self.key)
 
+    def close(self) -> None:
+        try:
+            self.cache2.close()
+        except Exception:
+            pass
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
+
+    @classmethod
+    def close_all(cls) -> None:
+        for obj in list(cls.ALL.values()):
+            close = getattr(obj, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    pass
+
     def get_cache_dir(self):
         home = pathlib.Path.home()
-        name = __package__
+        name = __package__ or "mcp_aktools"
         if sys.platform == "win32":
             return home / "AppData" / "Local" / "Cache" / name
         return home / ".cache" / name
+
+
+atexit.register(CacheKey.close_all)
