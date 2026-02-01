@@ -121,7 +121,7 @@ docker-compose up -d
 
 ## 🛠 工具一览
 
-AkTools Pro 提供了 61 个专业工具，分为以下核心模块：
+AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 
 ### 📈 股票 & 市场 (Stock & Market)
 > 覆盖 A股/港股/美股 的行情与基本面
