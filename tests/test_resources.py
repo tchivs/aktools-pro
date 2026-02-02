@@ -1,23 +1,44 @@
 """Tests for MCP resources."""
 
+import asyncio
+from typing import Any
+
 from mcp_aktools.server import mcp
+
+
+def require_template(key: str) -> Any:
+    template = mcp._resource_manager._templates.get(key)
+    assert template is not None, f"{key} template not registered"
+    return template
+
+
+def require_resource(key: str) -> Any:
+    resource = mcp._resource_manager._resources.get(key)
+    assert resource is not None, f"{key} resource not registered"
+    return resource
+
+
+def read_template(template: Any, arguments: dict[str, Any]) -> str:
+    return str(asyncio.run(template.read(arguments)))
+
+
+def read_resource(resource: Any) -> str:
+    return str(asyncio.run(resource.read()))
 
 
 def test_stock_dynamic_analysis_template():
     """Test that stock dynamic analysis resource returns correct content."""
-    # Get the resource template from the resource manager
-    template = mcp._resource_manager._templates.get("stock://{symbol}/analysis")
-    assert template is not None, "stock://{symbol}/analysis template not registered"
+    template = require_template("stock://{symbol}/analysis")
 
     # Call the underlying function with a test symbol
-    result = template.fn(symbol="600519")
+    result = read_template(template, {"symbol": "600519"})
 
     # Verify symbol is interpolated
     assert "600519" in result
     assert "专属分析建议" in result
 
     # Verify recommended tools are mentioned
-    assert "stock_prices" in result
+    assert "market_prices" in result
     assert "stock_news" in result
     assert "draw_ascii_chart" in result
     assert "stock_indicators_a" in result
@@ -35,12 +56,10 @@ def test_stock_dynamic_analysis_template():
 
 def test_sector_flow_guide_template():
     """Test that sector flow guide resource returns correct content."""
-    # Get the resource template from the resource manager
-    template = mcp._resource_manager._templates.get("market://{sector}/flow")
-    assert template is not None, "market://{sector}/flow template not registered"
+    template = require_template("market://{sector}/flow")
 
     # Call the underlying function with a test sector
-    result = template.fn(sector="半导体")
+    result = read_template(template, {"sector": "半导体"})
 
     # Verify sector is interpolated
     assert "半导体" in result
@@ -64,12 +83,10 @@ def test_sector_flow_guide_template():
 
 def test_tech_analysis_resource():
     """Test that technical analysis resource returns correct content."""
-    # Get the resource from the resource manager
-    resource = mcp._resource_manager._resources.get("skill://trading/logic/technical-analysis")
-    assert resource is not None, "skill://trading/logic/technical-analysis resource not registered"
+    resource = require_resource("skill://trading/logic/technical-analysis")
 
     # Call the underlying function
-    result = resource.fn()
+    result = read_resource(resource)
 
     # Verify technical indicators are explained
     assert "MACD" in result
@@ -83,12 +100,10 @@ def test_tech_analysis_resource():
 
 def test_risk_management_resource():
     """Test that risk management resource returns correct content."""
-    # Get the resource from the resource manager
-    resource = mcp._resource_manager._resources.get("skill://trading/strategy/risk-management")
-    assert resource is not None, "skill://trading/strategy/risk-management resource not registered"
+    resource = require_resource("skill://trading/strategy/risk-management")
 
     # Call the underlying function
-    result = resource.fn()
+    result = read_resource(resource)
 
     # Verify risk management principles
     assert "风险管理原则" in result
@@ -99,12 +114,10 @@ def test_risk_management_resource():
 
 def test_crypto_analysis_resource():
     """Test that crypto analysis resource returns correct content."""
-    # Get the resource from the resource manager
-    resource = mcp._resource_manager._resources.get("skill://crypto/logic/analysis-sop")
-    assert resource is not None, "skill://crypto/logic/analysis-sop resource not registered"
+    resource = require_resource("skill://crypto/logic/analysis-sop")
 
     # Call the underlying function
-    result = resource.fn()
+    result = read_resource(resource)
 
     # Verify crypto-specific analysis
     assert "加密货币分析 SOP" in result
@@ -119,12 +132,10 @@ def test_crypto_analysis_resource():
 
 def test_precious_metals_analysis_resource():
     """Test that precious metals analysis resource returns correct content."""
-    # Get the resource from the resource manager
-    resource = mcp._resource_manager._resources.get("skill://trading/logic/precious-metals-analysis")
-    assert resource is not None, "skill://trading/logic/precious-metals-analysis resource not registered"
+    resource = require_resource("skill://trading/logic/precious-metals-analysis")
 
     # Call the underlying function
-    result = resource.fn()
+    result = read_resource(resource)
 
     # Verify precious metals analysis structure
     assert "贵金属分析 SOP" in result
@@ -143,51 +154,51 @@ def test_precious_metals_analysis_resource():
 
 def test_stock_dynamic_analysis_different_symbols():
     """Test stock analysis with different symbols."""
-    template = mcp._resource_manager._templates.get("stock://{symbol}/analysis")
+    template = require_template("stock://{symbol}/analysis")
 
     symbols = ["000001", "600000", "AAPL"]
     for symbol in symbols:
-        result = template.fn(symbol=symbol)
+        result = read_template(template, {"symbol": symbol})
         assert symbol in result
         assert len(result) > 100  # Should have substantial content
 
 
 def test_stock_dynamic_analysis_edge_cases():
     """Test stock analysis with edge cases."""
-    template = mcp._resource_manager._templates.get("stock://{symbol}/analysis")
+    template = require_template("stock://{symbol}/analysis")
 
     # Empty string
-    result = template.fn(symbol="")
+    result = read_template(template, {"symbol": ""})
     assert isinstance(result, str)
     assert len(result) > 50
 
     # Special characters
-    result = template.fn(symbol="600519.SH")
+    result = read_template(template, {"symbol": "600519.SH"})
     assert isinstance(result, str)
     assert "600519.SH" in result
 
 
 def test_sector_flow_guide_different_sectors():
     """Test sector flow guide with different sectors."""
-    template = mcp._resource_manager._templates.get("market://{sector}/flow")
+    template = require_template("market://{sector}/flow")
 
     sectors = ["电子", "医药", "新能源"]
     for sector in sectors:
-        result = template.fn(sector=sector)
+        result = read_template(template, {"sector": sector})
         assert sector in result
         assert len(result) > 100
 
 
 def test_sector_flow_guide_edge_cases():
     """Test sector flow guide with edge cases."""
-    template = mcp._resource_manager._templates.get("market://{sector}/flow")
+    template = require_template("market://{sector}/flow")
 
     # Empty string
-    result = template.fn(sector="")
+    result = read_template(template, {"sector": ""})
     assert isinstance(result, str)
     assert len(result) > 50
 
     # Special characters
-    result = template.fn(sector="半导体/芯片")
+    result = read_template(template, {"sector": "半导体/芯片"})
     assert isinstance(result, str)
     assert "半导体/芯片" in result

@@ -42,7 +42,7 @@ async def test_composite_stock_diagnostic_reports_progress():
     mock_ctx = mock.AsyncMock()
 
     with (
-        mock.patch.object(analysis.stock_prices, "fn", return_value="price_data"),
+        mock.patch.object(analysis.market_prices, "fn", return_value="price_data"),
         mock.patch.object(analysis.stock_info, "fn", return_value="info_data"),
         mock.patch.object(analysis.stock_news, "fn", return_value="news_data"),
     ):
@@ -57,9 +57,8 @@ async def test_crypto_composite_diagnostic_reports_progress():
     mock_ctx = mock.AsyncMock()
 
     with (
-        mock.patch.object(crypto.okx_prices, "fn", return_value="price_data"),
-        mock.patch.object(crypto.okx_loan_ratios, "fn", return_value="loan_data"),
-        mock.patch.object(crypto.okx_taker_volume, "fn", return_value="taker_data"),
+        mock.patch.object(crypto.crypto_prices, "fn", return_value="price_data"),
+        mock.patch.object(crypto.crypto_sentiment_metrics, "fn", return_value="sentiment_data"),
         mock.patch.object(crypto.binance_ai_report, "fn", return_value="ai_report"),
     ):
         result = await crypto_composite_diagnostic_fn(symbol="BTC", ctx=mock_ctx)

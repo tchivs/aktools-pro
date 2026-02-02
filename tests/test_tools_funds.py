@@ -13,7 +13,6 @@ fund_info_fn = funds_module.fund_info.fn
 fund_nav_fn = funds_module.fund_nav.fn
 fund_holdings_fn = funds_module.fund_holdings.fn
 fund_ranking_fn = funds_module.fund_ranking.fn
-etf_prices_fn = funds_module.etf_prices.fn
 
 
 class TestFundInfo:
@@ -139,42 +138,3 @@ class TestFundRanking:
 
             csv_df = pd.read_csv(StringIO(result))
             assert len(csv_df) <= 100
-
-
-class TestEtfPrices:
-    """Test the etf_prices tool."""
-
-    def test_etf_prices_returns_csv(self):
-        """Test that etf_prices returns CSV format."""
-        mock_df = pd.DataFrame(
-            {
-                "日期": ["2024-01-01", "2024-01-02"],
-                "开盘": [2.5000, 2.5100],
-                "收盘": [2.5200, 2.5300],
-                "最高": [2.5300, 2.5400],
-                "最低": [2.4900, 2.5000],
-                "成交量": [1000000, 1100000],
-            }
-        )
-
-        with mock.patch("mcp_aktools.tools.funds.ak_cache", return_value=mock_df):
-            result = etf_prices_fn(code="159915", limit=30)
-
-            assert isinstance(result, str)
-            assert "日期" in result
-            assert "收盘" in result
-
-    def test_etf_prices_limit(self):
-        """Test etf_prices respects limit parameter."""
-        mock_df = pd.DataFrame(
-            {
-                "日期": pd.date_range("2024-01-01", periods=100),
-                "收盘": [2.5 + i * 0.01 for i in range(100)],
-            }
-        )
-
-        with mock.patch("mcp_aktools.tools.funds.ak_cache", return_value=mock_df):
-            result = etf_prices_fn(code="159915", limit=20)
-
-            csv_df = pd.read_csv(StringIO(result))
-            assert len(csv_df) == 20

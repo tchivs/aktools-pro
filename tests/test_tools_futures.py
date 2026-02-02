@@ -32,7 +32,7 @@ class TestFuturesPrices:
             result = futures_prices_fn(symbol="螺纹钢", limit=30)
 
             assert isinstance(result, str)
-            assert "日期" in result or "收盘价" in result
+            assert "date" in result
 
     def test_handles_empty_dataframe(self):
         """Test handling of empty DataFrame."""
@@ -41,7 +41,8 @@ class TestFuturesPrices:
         with mock.patch("mcp_aktools.tools.futures.ak_cache", return_value=mock_df):
             result = futures_prices_fn(symbol="螺纹钢", limit=30)
 
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result
 
     def test_handles_time_column(self):
         """Test handling when DataFrame has '时间' instead of '日期'."""
@@ -57,7 +58,7 @@ class TestFuturesPrices:
             result = futures_prices_fn(symbol="螺纹钢", limit=30)
 
             assert isinstance(result, str)
-            assert "日期" in result or "开盘价" in result
+            assert "date" in result
 
 
 class TestFuturesInventory:

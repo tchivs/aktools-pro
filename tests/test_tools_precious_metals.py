@@ -37,7 +37,7 @@ class TestPmSpotPrices:
             result = pm_spot_prices_fn(symbol="Au99.99", limit=10)
 
             assert isinstance(result, str)
-            assert "日期" in result or "收盘价" in result
+            assert "date" in result
 
     def test_handles_empty_dataframe(self):
         """Test handling of empty DataFrame."""
@@ -46,8 +46,8 @@ class TestPmSpotPrices:
         with mock.patch("mcp_aktools.tools.precious_metals.ak_cache", return_value=mock_df):
             result = pm_spot_prices_fn(symbol="Au99.99", limit=10)
 
-            # Should return empty DataFrame
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result
 
 
 class TestPmInternationalPrices:

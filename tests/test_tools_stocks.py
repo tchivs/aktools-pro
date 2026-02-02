@@ -11,7 +11,7 @@ search_fn = stocks_module.search.fn
 stock_info_fn = stocks_module.stock_info.fn
 stock_news_fn = stocks_module.stock_news.fn
 inst_holding_fn = stocks_module.institutional_holding_summary.fn
-stock_prices_fn = stocks_module.stock_prices.fn
+market_prices_fn = stocks_module.market_prices.fn
 indicators_a_fn = stocks_module.stock_indicators_a.fn
 indicators_hk_fn = stocks_module.stock_indicators_hk.fn
 indicators_us_fn = stocks_module.stock_indicators_us.fn
@@ -118,8 +118,8 @@ class TestInstitutionalHolding:
         assert isinstance(result, str)
 
 
-class TestStockPrices:
-    def test_stock_prices_returns_csv_with_indicators(self):
+class TestMarketPrices:
+    def test_market_prices_returns_csv_with_indicators(self):
         mock_df = pd.DataFrame(
             {
                 "日期": pd.date_range("2024-01-01", periods=10),
@@ -132,16 +132,16 @@ class TestStockPrices:
             }
         )
         with mock.patch("mcp_aktools.tools.stocks.ak_cache", return_value=mock_df):
-            result = stock_prices_fn(symbol="000001", market="sh", limit=5)
+            result = market_prices_fn(symbol="000001", market="sh", limit=5)
         assert isinstance(result, str)
-        assert "日期" in result
+        assert "date" in result
 
-    def test_stock_prices_not_found(self):
+    def test_market_prices_not_found(self):
         with mock.patch("mcp_aktools.tools.stocks.ak_cache", return_value=None):
-            result = stock_prices_fn(symbol="NONEXISTENT", market="sh", limit=30)
-        assert "Not Found" in result
+            result = market_prices_fn(symbol="NONEXISTENT", market="sh", limit=30)
+        assert "error" in result
 
-    def test_stock_prices_weekly(self):
+    def test_market_prices_weekly(self):
         mock_df = pd.DataFrame(
             {
                 "日期": pd.date_range("2024-01-01", periods=10),
@@ -154,9 +154,9 @@ class TestStockPrices:
             }
         )
         with mock.patch("mcp_aktools.tools.stocks.ak_cache", return_value=mock_df):
-            result = stock_prices_fn(symbol="000001", market="sh", period="weekly", limit=5)
+            result = market_prices_fn(symbol="000001", market="sh", period="weekly", limit=5)
         assert isinstance(result, str)
-        assert "日期" in result
+        assert "date" in result
 
 
 class TestStockIndicators:

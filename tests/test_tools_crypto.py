@@ -10,9 +10,8 @@ from mcp_aktools.tools import crypto as crypto_module
 # Get actual functions from FunctionTool objects
 _safe_float = crypto_module._safe_float
 _safe_int = crypto_module._safe_int
-okx_prices_fn = crypto_module.okx_prices.fn
-okx_loan_fn = crypto_module.okx_loan_ratios.fn
-okx_taker_fn = crypto_module.okx_taker_volume.fn
+crypto_prices_fn = crypto_module.crypto_prices.fn
+crypto_sentiment_fn = crypto_module.crypto_sentiment_metrics.fn
 binance_ai_fn = crypto_module.binance_ai_report.fn
 crypto_diag_fn = crypto_module.crypto_composite_diagnostic.fn
 draw_crypto_chart_fn = crypto_module.draw_crypto_chart.fn
@@ -63,8 +62,8 @@ class TestSafeInt:
         assert _safe_int("invalid") == 0
 
 
-class TestOkxPrices:
-    """Test the okx_prices tool."""
+class TestCryptoPrices:
+    """Test the crypto_prices tool."""
 
     def test_returns_csv_with_indicators(self):
         """Test that function returns price data with technical indicators."""
@@ -97,11 +96,11 @@ class TestOkxPrices:
         }
 
         with mock.patch("mcp_aktools.tools.crypto.requests.get", return_value=mock_response):
-            result = okx_prices_fn(instId="BTC-USDT", bar="1H", limit=2)
+            result = crypto_prices_fn(symbol="BTC-USDT", period="1H", limit=2)
 
             assert isinstance(result, str)
-            assert "时间" in result
-            assert "收盘" in result
+            assert "date" in result
+            assert "close" in result
 
     def test_empty_response(self):
         """Test handling of empty response."""
@@ -109,53 +108,42 @@ class TestOkxPrices:
         mock_response.json.return_value = {"data": []}
 
         with mock.patch("mcp_aktools.tools.crypto.requests.get", return_value=mock_response):
-            result = okx_prices_fn(instId="BTC-USDT", bar="1H", limit=2)
+            result = crypto_prices_fn(symbol="BTC-USDT", period="1H", limit=2)
 
-            # Should handle gracefully
-            assert isinstance(result, (str, pd.DataFrame))
+            assert isinstance(result, str)
+            assert "error" in result
 
 
-class TestOkxLoanRatios:
-    """Test the okx_loan_ratios tool."""
+class TestCryptoSentimentMetrics:
+    """Test the crypto_sentiment_metrics tool."""
 
     def test_returns_csv(self):
-        """Test that function returns loan ratio data."""
-        mock_response = mock.Mock()
-        mock_response.json.return_value = {
+        """Test that function returns sentiment data."""
+        loan_response = mock.Mock()
+        loan_response.json.return_value = {
             "data": [
                 ["1704067200000", "1.5"],
                 ["1704153600000", "1.6"],
             ]
         }
-
-        with mock.patch("mcp_aktools.tools.crypto.requests.get", return_value=mock_response):
-            result = okx_loan_fn(symbol="BTC", period="1H")
-
-            assert isinstance(result, str)
-            assert "时间" in result
-            assert "多空比" in result
-
-
-class TestOkxTakerVolume:
-    """Test the okx_taker_volume tool."""
-
-    def test_returns_csv(self):
-        """Test that function returns taker volume data."""
-        mock_response = mock.Mock()
-        mock_response.json.return_value = {
+        taker_response = mock.Mock()
+        taker_response.json.return_value = {
             "data": [
                 ["1704067200000", "100.00", "150.00"],
                 ["1704153600000", "120.00", "180.00"],
             ]
         }
 
-        with mock.patch("mcp_aktools.tools.crypto.requests.get", return_value=mock_response):
-            result = okx_taker_fn(symbol="BTC", period="1H", instType="SPOT")
+        with mock.patch(
+            "mcp_aktools.tools.crypto.requests.get",
+            side_effect=[loan_response, taker_response],
+        ):
+            result = crypto_sentiment_fn(symbol="BTC", period="1H", inst_type="SPOT")
 
             assert isinstance(result, str)
             assert "时间" in result
+            assert "多空比" in result
             assert "卖出量" in result
-            assert "买入量" in result
 
 
 class TestBinanceAiReport:
@@ -200,23 +188,20 @@ class TestCryptoCompositeDiagnostic:
     @pytest.mark.asyncio
     async def test_returns_composite_report(self):
         """Test that function returns a composite diagnostic report."""
-        mock_prices = "时间,开盘,收盘,最高,最低\n2024-01-01,42000,42500,43000,41500"
-        mock_loan = "时间,多空比\n2024-01-01,1.5"
-        mock_taker = "时间,卖出量,买入量\n2024-01-01,100,150"
+        mock_prices = "date,open,high,low,close\n2024-01-01,42000,43000,41500,42500"
+        mock_sentiment = "时间,多空比\n2024-01-01,1.5"
         mock_ai = "BTC AI Analysis Report"
 
-        with mock.patch("mcp_aktools.tools.crypto.okx_prices", return_value=mock_prices):
-            with mock.patch("mcp_aktools.tools.crypto.okx_loan_ratios", return_value=mock_loan):
-                with mock.patch("mcp_aktools.tools.crypto.okx_taker_volume", return_value=mock_taker):
-                    with mock.patch("mcp_aktools.tools.crypto.binance_ai_report", return_value=mock_ai):
-                        result = await crypto_diag_fn(symbol="BTC")
+        with mock.patch("mcp_aktools.tools.crypto.crypto_prices", return_value=mock_prices):
+            with mock.patch("mcp_aktools.tools.crypto.crypto_sentiment_metrics", return_value=mock_sentiment):
+                with mock.patch("mcp_aktools.tools.crypto.binance_ai_report", return_value=mock_ai):
+                    result = await crypto_diag_fn(symbol="BTC")
 
-                        assert isinstance(result, str)
-                        assert "加密货币综合诊断" in result
-                        assert "近期价格" in result
-                        assert "杠杆多空比" in result
-                        assert "主动买卖量" in result
-                        assert "币安AI报告" in result
+                    assert isinstance(result, str)
+                    assert "加密货币综合诊断" in result
+                    assert "近期价格" in result
+                    assert "情绪指标" in result
+                    assert "币安AI报告" in result
 
 
 class TestDrawCryptoChart:
@@ -224,11 +209,11 @@ class TestDrawCryptoChart:
 
     def test_returns_ascii_chart(self):
         """Test that function returns an ASCII chart."""
-        mock_prices = "时间,开盘,收盘,最高,最低\n" + "\n".join(
-            [f"2024-01-{i + 1:02d},42000,42500,43000,41500" for i in range(20)]
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
+            [f"2024-01-{i + 1:02d},42000,43000,41500,42500" for i in range(20)]
         )
 
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=mock_prices):
             result = draw_crypto_chart_fn(symbol="BTC", bar="1D")
 
             assert isinstance(result, str)
@@ -238,7 +223,7 @@ class TestDrawCryptoChart:
 
     def test_handles_insufficient_data(self):
         """Test handling of insufficient data."""
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=""):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=""):
             result = draw_crypto_chart_fn(symbol="BTC", bar="1D")
 
             assert isinstance(result, str)
@@ -250,11 +235,11 @@ class TestBacktestCryptoStrategy:
 
     def test_sma_strategy(self):
         """Test SMA strategy backtest."""
-        mock_prices = "时间,开盘,收盘,最高,最低\n" + "\n".join(
-            [f"2024-01-{i + 1:02d},42000,{42000 + i * 100},43000,41500" for i in range(30)]
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
+            [f"2024-01-{i + 1:02d},42000,43000,41500,{42000 + i * 100}" for i in range(30)]
         )
 
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=mock_prices):
             result = backtest_crypto_fn(symbol="BTC", strategy="SMA", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -262,9 +247,9 @@ class TestBacktestCryptoStrategy:
             assert "累计收益" in result
             assert "最大回撤" in result
 
-    def test_returns_not_found_when_okx_prices_not_string(self):
-        """Test backtest when okx_prices returns non-string."""
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=pd.DataFrame()):
+    def test_returns_not_found_when_crypto_prices_not_string(self):
+        """Test backtest when crypto_prices returns non-string."""
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=pd.DataFrame()):
             result = backtest_crypto_fn(symbol="BTC", strategy="SMA", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -272,8 +257,8 @@ class TestBacktestCryptoStrategy:
 
     def test_parse_failure(self):
         """Test backtest when price data cannot be parsed."""
-        bad_csv = '时间,收盘\n"unterminated'
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=bad_csv):
+        bad_csv = 'date,close\n"unterminated'
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=bad_csv):
             result = backtest_crypto_fn(symbol="BTC", strategy="SMA", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -281,7 +266,7 @@ class TestBacktestCryptoStrategy:
 
     def test_empty_dataframe_after_parsing(self):
         """Test backtest when parsed data is empty."""
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value="时间,开盘,收盘,最高,最低\n"):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value="date,open,high,low,close\n"):
             result = backtest_crypto_fn(symbol="BTC", strategy="SMA", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -289,8 +274,8 @@ class TestBacktestCryptoStrategy:
 
     def test_missing_close_column(self):
         """Test backtest when '收盘' column is missing."""
-        mock_prices = "时间,开盘,最高,最低\n2024-01-01,42000,43000,41500"
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=mock_prices):
+        mock_prices = "date,open,high,low\n2024-01-01,42000,43000,41500"
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=mock_prices):
             result = backtest_crypto_fn(symbol="BTC", strategy="SMA", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -298,10 +283,10 @@ class TestBacktestCryptoStrategy:
 
     def test_rsi_strategy_missing_rsi_column(self):
         """Test RSI strategy when RSI column is missing."""
-        mock_prices = "时间,开盘,收盘,最高,最低\n" + "\n".join(
-            [f"2024-01-{i + 1:02d},42000,{42000 + i * 10},43000,41500" for i in range(30)]
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
+            [f"2024-01-{i + 1:02d},42000,43000,41500,{42000 + i * 10}" for i in range(30)]
         )
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=mock_prices):
             result = backtest_crypto_fn(symbol="BTC", strategy="RSI", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -309,10 +294,10 @@ class TestBacktestCryptoStrategy:
 
     def test_macd_strategy_missing_columns(self):
         """Test MACD strategy when DIF/DEA columns are missing."""
-        mock_prices = "时间,开盘,收盘,最高,最低\n" + "\n".join(
-            [f"2024-01-{i + 1:02d},42000,{42000 + i * 10},43000,41500" for i in range(30)]
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
+            [f"2024-01-{i + 1:02d},42000,43000,41500,{42000 + i * 10}" for i in range(30)]
         )
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=mock_prices):
             result = backtest_crypto_fn(symbol="BTC", strategy="MACD", bar="4H", limit=30)
 
             assert isinstance(result, str)
@@ -320,18 +305,18 @@ class TestBacktestCryptoStrategy:
 
     def test_invalid_strategy(self):
         """Test backtest with invalid strategy."""
-        mock_prices = "时间,开盘,收盘,最高,最低\n" + "\n".join(
-            [f"2024-01-{i + 1:02d},42000,{42000 + i * 10},43000,41500" for i in range(30)]
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
+            [f"2024-01-{i + 1:02d},42000,43000,41500,{42000 + i * 10}" for i in range(30)]
         )
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=mock_prices):
             result = backtest_crypto_fn(symbol="BTC", strategy="INVALID", bar="4H", limit=30)
 
             assert isinstance(result, str)
             assert "不支持" in result
 
     def test_returns_not_found_when_no_data(self):
-        """Test backtest returns not-found when okx_prices is empty."""
-        with mock.patch.object(crypto_module.okx_prices, "fn", return_value=""):
+        """Test backtest returns not-found when crypto_prices is empty."""
+        with mock.patch.object(crypto_module.crypto_prices, "fn", return_value=""):
             result = backtest_crypto_fn(symbol="BTC", strategy="SMA", bar="4H", limit=30)
             assert "未找到" in result
 

@@ -39,7 +39,7 @@ class TestToolRegistration:
         expected_tools = [
             "search",
             "stock_info",
-            "stock_prices",
+            "market_prices",
             "stock_news",
             "institutional_holding_summary",
             "stock_indicators_a",
@@ -55,9 +55,8 @@ class TestToolRegistration:
         tools = mcp._tool_manager._tools
 
         expected_tools = [
-            "okx_prices",
-            "okx_loan_ratios",
-            "okx_taker_volume",
+            "crypto_prices",
+            "crypto_sentiment_metrics",
             "binance_ai_report",
             "crypto_composite_diagnostic",
             "draw_crypto_chart",
@@ -146,7 +145,9 @@ class TestToolInvocation:
         assert tool is not None
 
         # Call the underlying function
-        result = tool.fn()
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        result = fn()
         assert isinstance(result, str)
         assert "当前时间" in result
 
@@ -155,7 +156,9 @@ class TestToolInvocation:
         tool = mcp._tool_manager._tools.get("trading_suggest")
         assert tool is not None
 
-        result = tool.fn(symbol="000001", action="buy", score=85, reason="Test")
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        result = fn(symbol="000001", action="buy", score=85, reason="Test")
         assert isinstance(result, dict)
         assert result["symbol"] == "000001"
         assert result["action"] == "buy"
@@ -170,7 +173,9 @@ class TestToolInvocation:
 
         # Mock the portfolio file
         with mock.patch.object(constants, "PORTFOLIO_FILE", "/tmp/test_portfolio.json"):
-            result = tool.fn(symbol="000001", price=10.5, volume=100, market="sh")
+            fn = getattr(tool, "fn", None)
+            assert callable(fn)
+            result = fn(symbol="000001", price=10.5, volume=100, market="sh")
             assert isinstance(result, str)
             assert "成功" in result
 
@@ -199,7 +204,9 @@ class TestResourceRegistration:
     def test_resources_have_content(self):
         """Test that resources return content."""
         for uri, resource in mcp._resource_manager._resources.items():
-            content = resource.fn()
+            fn = getattr(resource, "fn", None)
+            assert callable(fn), f"Resource {uri} missing callable fn"
+            content = fn()
             assert content, f"Resource {uri} has no content"
 
 
@@ -296,9 +303,8 @@ class TestIntegrationScenarios:
     def test_crypto_analysis_workflow_tools_exist(self):
         """Test that tools needed for crypto analysis workflow exist."""
         required_tools = [
-            "okx_prices",
-            "okx_loan_ratios",
-            "okx_taker_volume",
+            "crypto_prices",
+            "crypto_sentiment_metrics",
             "binance_ai_report",
             "crypto_composite_diagnostic",
             "draw_crypto_chart",
@@ -320,28 +326,33 @@ class TestFunctionToolCallability:
         """Verify all registered tools have callable .fn attribute."""
         for name, tool in mcp._tool_manager._tools.items():
             assert hasattr(tool, "fn"), f"Tool {name} missing .fn attribute"
-            assert callable(tool.fn), f"Tool {name}.fn is not callable"
+            assert callable(getattr(tool, "fn", None)), f"Tool {name}.fn is not callable"
 
-    def test_stock_prices_fn_callable(self):
-        """Test stock_prices.fn is directly callable."""
-        tool = mcp._tool_manager._tools.get("stock_prices")
-        assert callable(tool.fn)
-        assert tool.fn.__name__ == "stock_prices"
+    def test_market_prices_fn_callable(self):
+        """Test market_prices.fn is directly callable."""
+        tool = mcp._tool_manager._tools.get("market_prices")
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        assert fn.__name__ == "market_prices"
 
     def test_stock_info_fn_callable(self):
         """Test stock_info.fn is directly callable."""
         tool = mcp._tool_manager._tools.get("stock_info")
-        assert callable(tool.fn)
+        assert tool is not None
+        assert callable(getattr(tool, "fn", None))
 
     def test_stock_news_fn_callable(self):
         """Test stock_news.fn is directly callable."""
         tool = mcp._tool_manager._tools.get("stock_news")
-        assert callable(tool.fn)
+        assert tool is not None
+        assert callable(getattr(tool, "fn", None))
 
-    def test_okx_prices_fn_callable(self):
-        """Test okx_prices.fn is directly callable."""
-        tool = mcp._tool_manager._tools.get("okx_prices")
-        assert callable(tool.fn)
+    def test_crypto_prices_fn_callable(self):
+        """Test crypto_prices.fn is directly callable."""
+        tool = mcp._tool_manager._tools.get("crypto_prices")
+        assert tool is not None
+        assert callable(getattr(tool, "fn", None))
 
     def test_composite_tools_use_fn_attribute(self):
         """Verify composite tools access dependencies via .fn attribute.
@@ -351,9 +362,12 @@ class TestFunctionToolCallability:
         import inspect
 
         composite_tool = mcp._tool_manager._tools.get("composite_stock_diagnostic")
-        source = inspect.getsource(composite_tool.fn)
+        assert composite_tool is not None
+        fn = getattr(composite_tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "stock_prices.fn" in source, "composite_stock_diagnostic should use stock_prices.fn"
+        assert "market_prices.fn" in source, "composite_stock_diagnostic should use market_prices.fn"
         assert "stock_info.fn" in source, "composite_stock_diagnostic should use stock_info.fn"
         assert "stock_news.fn" in source, "composite_stock_diagnostic should use stock_news.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
@@ -363,9 +377,12 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("draw_ascii_chart")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "stock_prices.fn" in source, "draw_ascii_chart should use stock_prices.fn"
+        assert "market_prices.fn" in source, "draw_ascii_chart should use market_prices.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
 
     def test_backtest_strategy_uses_fn_attribute(self):
@@ -373,9 +390,12 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("backtest_strategy")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "stock_prices.fn" in source, "backtest_strategy should use stock_prices.fn"
+        assert "market_prices.fn" in source, "backtest_strategy should use market_prices.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
 
     def test_crypto_composite_uses_fn_attribute(self):
@@ -383,9 +403,12 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("crypto_composite_diagnostic")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "okx_prices.fn" in source, "crypto_composite_diagnostic should use okx_prices.fn"
+        assert "crypto_prices.fn" in source, "crypto_composite_diagnostic should use crypto_prices.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
 
     def test_pm_composite_uses_fn_attribute(self):
@@ -393,7 +416,10 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("pm_composite_diagnostic")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
         assert "pm_spot_prices.fn" in source, "pm_composite_diagnostic should use pm_spot_prices.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
@@ -403,9 +429,12 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("draw_crypto_chart")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "okx_prices.fn" in source, "draw_crypto_chart should use okx_prices.fn"
+        assert "crypto_prices.fn" in source, "draw_crypto_chart should use crypto_prices.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
 
     def test_backtest_crypto_uses_fn_attribute(self):
@@ -413,9 +442,12 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("backtest_crypto_strategy")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "okx_prices.fn" in source, "backtest_crypto_strategy should use okx_prices.fn"
+        assert "crypto_prices.fn" in source, "backtest_crypto_strategy should use crypto_prices.fn"
         assert "cast(Callable" not in source, "Should not use cast(Callable...) pattern"
 
     def test_portfolio_view_uses_fn_attribute(self):
@@ -423,18 +455,24 @@ class TestFunctionToolCallability:
         import inspect
 
         tool = mcp._tool_manager._tools.get("portfolio_view")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "stock_prices.fn" in source, "portfolio_view should use stock_prices.fn"
+        assert "market_prices.fn" in source, "portfolio_view should use market_prices.fn"
 
     def test_portfolio_chart_uses_fn_attribute(self):
         """Verify portfolio_chart uses .fn attribute."""
         import inspect
 
         tool = mcp._tool_manager._tools.get("portfolio_chart")
-        source = inspect.getsource(tool.fn)
+        assert tool is not None
+        fn = getattr(tool, "fn", None)
+        assert callable(fn)
+        source = inspect.getsource(fn)
 
-        assert "stock_prices.fn" in source, "portfolio_chart should use stock_prices.fn"
+        assert "market_prices.fn" in source, "portfolio_chart should use market_prices.fn"
 
 
 if __name__ == "__main__":

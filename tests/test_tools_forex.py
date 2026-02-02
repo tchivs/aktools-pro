@@ -6,13 +6,12 @@ from unittest import mock
 
 from mcp_aktools.tools import forex as fx_module
 
-fx_spot_rates_fn = fx_module.fx_spot_rates.fn
+fx_rates_fn = fx_module.fx_rates.fn
 fx_history_fn = fx_module.fx_history.fn
-fx_cross_rates_fn = fx_module.fx_cross_rates.fn
 
 
-class TestFxSpotRates:
-    """Test the fx_spot_rates tool."""
+class TestFxRates:
+    """Test the fx_rates tool."""
 
     def test_returns_csv(self):
         """Test that function returns spot rate data."""
@@ -25,19 +24,20 @@ class TestFxSpotRates:
         )
 
         with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_spot_rates_fn(pair="USDCNY")
+            result = fx_rates_fn(symbol="USDCNY")
 
             assert isinstance(result, str)
-            assert "货币对" in result or "最新价" in result
+            assert "rate" in result or "currency" in result
 
     def test_handles_empty_dataframe(self):
         """Test handling of empty DataFrame."""
         mock_df = pd.DataFrame()
 
         with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_spot_rates_fn(pair="USDCNY")
+            result = fx_rates_fn(symbol="USDCNY")
 
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result
 
 
 class TestFxHistory:
@@ -56,19 +56,20 @@ class TestFxHistory:
         )
 
         with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_history_fn(pair="USDCNY", limit=10)
+            result = fx_history_fn(symbol="USDCNY", limit=10)
 
             assert isinstance(result, str)
-            assert "日期" in result or "收盘价" in result
+            assert "date" in result or "rate" in result
 
     def test_handles_empty_dataframe(self):
         """Test handling of empty DataFrame."""
         mock_df = pd.DataFrame()
 
         with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_history_fn(pair="USDCNY", limit=10)
+            result = fx_history_fn(symbol="USDCNY", limit=10)
 
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result
 
     def test_handles_time_column(self):
         """Test handling when DataFrame has '时间' instead of '日期'."""
@@ -81,36 +82,7 @@ class TestFxHistory:
         )
 
         with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_history_fn(pair="USDCNY", limit=10)
+            result = fx_history_fn(symbol="USDCNY", limit=10)
 
             assert isinstance(result, str)
-            assert "日期" in result or "开盘价" in result
-
-
-class TestFxCrossRates:
-    """Test the fx_cross_rates tool."""
-
-    def test_returns_csv(self):
-        """Test that function returns cross rate data."""
-        mock_df = pd.DataFrame(
-            {
-                "货币对": ["USDCNY", "EURUSD", "USDJPY", "GBPUSD"],
-                "最新价": [7.2500, 1.0850, 148.50, 1.2650],
-                "涨跌幅": [0.15, -0.25, 0.35, 0.10],
-            }
-        )
-
-        with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_cross_rates_fn()
-
-            assert isinstance(result, str)
-            assert "货币对" in result or "最新价" in result
-
-    def test_handles_empty_dataframe(self):
-        """Test handling of empty DataFrame."""
-        mock_df = pd.DataFrame()
-
-        with mock.patch("mcp_aktools.tools.forex.ak_cache", return_value=mock_df):
-            result = fx_cross_rates_fn()
-
-            assert isinstance(result, pd.DataFrame)
+            assert "date" in result or "rate" in result

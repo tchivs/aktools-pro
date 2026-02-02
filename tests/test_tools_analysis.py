@@ -18,11 +18,11 @@ class TestCompositeStockDiagnostic:
     @pytest.mark.asyncio
     async def test_returns_composite_report(self):
         """Test that function returns a composite diagnostic report."""
-        mock_prices = "日期,开盘,收盘,最高,最低\n2024-01-01,10.0,11.0,11.5,9.5"
+        mock_prices = "date,open,high,low,close\n2024-01-01,10.0,11.5,9.5,11.0"
         mock_info = "股票信息\n名称: 平安银行\n代码: 000001"
         mock_news = "日期,标题\n2024-01-01,Test news"
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             with mock.patch.object(analysis_module.stock_info, "fn", return_value=mock_info):
                 with mock.patch.object(analysis_module.stock_news, "fn", return_value=mock_news):
                     result = await composite_diag_fn(symbol="000001", market="sh")
@@ -39,15 +39,15 @@ class TestDrawAsciiChart:
 
     def test_returns_chart(self):
         """Test that function returns an ASCII chart."""
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                "2024-01-01,10.0,10.5,11.0,9.5",
-                "2024-01-02,10.5,11.0,11.5,10.0",
-                "2024-01-03,11.0,10.8,11.2,10.5",
+                "2024-01-01,10.0,11.0,9.5,10.5",
+                "2024-01-02,10.5,11.5,10.0,11.0",
+                "2024-01-03,11.0,11.2,10.5,10.8",
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = draw_chart_fn(symbol="000001", market="sh")
 
             assert isinstance(result, str)
@@ -57,7 +57,7 @@ class TestDrawAsciiChart:
 
     def test_handles_empty_data(self):
         """Test that function handles empty price data."""
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=""):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=""):
             result = draw_chart_fn(symbol="000001", market="sh")
 
             assert isinstance(result, str)
@@ -69,14 +69,14 @@ class TestBacktestStrategy:
     def test_sma_strategy_returns_report(self):
         """Test SMA strategy backtest."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="SMA", days=30)
 
             assert isinstance(result, str)
@@ -87,14 +87,14 @@ class TestBacktestStrategy:
     def test_rsi_strategy_returns_report(self):
         """Test RSI strategy backtest."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低,RSI\n" + "\n".join(
+        mock_prices = "date,open,high,low,close,rsi\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{30 + i}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1},{30 + i}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="RSI", days=30)
 
             assert isinstance(result, str)
@@ -103,14 +103,14 @@ class TestBacktestStrategy:
     def test_macd_strategy_returns_report(self):
         """Test MACD strategy backtest."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低,DIF,DEA\n" + "\n".join(
+        mock_prices = "date,open,high,low,close,dif,dea\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{0.1 + i * 0.01},{0.05 + i * 0.01}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1},{0.1 + i * 0.01},{0.05 + i * 0.01}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="MACD", days=30)
 
             assert isinstance(result, str)
@@ -119,14 +119,14 @@ class TestBacktestStrategy:
     def test_invalid_strategy(self):
         """Test backtest with invalid strategy."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="INVALID", days=30)
 
             assert isinstance(result, str)
@@ -134,7 +134,9 @@ class TestBacktestStrategy:
 
     def test_not_found_symbol(self):
         """Test backtest when symbol not found."""
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value="Not Found"):
+        with mock.patch.object(
+            analysis_module.market_prices, "fn", return_value="error,source,fallback\nempty data,akshare,"
+        ):
             result = backtest_fn(symbol="NONEXISTENT", market="sh", strategy="SMA", days=30)
 
             assert isinstance(result, str)
@@ -143,14 +145,14 @@ class TestBacktestStrategy:
     def test_boll_strategy_returns_report(self):
         """Test BOLL strategy backtest."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低,BOLL.U,BOLL.L\n" + "\n".join(
+        mock_prices = "date,open,high,low,close,boll_u,boll_l\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{12 + i * 0.1},{9 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1},{12 + i * 0.1},{9 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="BOLL", days=30)
 
             assert isinstance(result, str)
@@ -160,14 +162,14 @@ class TestBacktestStrategy:
     def test_ma_cross_strategy_returns_report(self):
         """Test MA_CROSS strategy backtest."""
         dates = pd.date_range("2024-01-01", periods=40)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="MA_CROSS", days=40)
 
             assert isinstance(result, str)
@@ -177,14 +179,14 @@ class TestBacktestStrategy:
     def test_kdj_strategy_returns_report(self):
         """Test KDJ strategy backtest."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低,KDJ.K,KDJ.D\n" + "\n".join(
+        mock_prices = "date,open,high,low,close,kdj_k,kdj_d\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{50 + i},{45 + i}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1},{50 + i},{45 + i}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="KDJ", days=30)
 
             assert isinstance(result, str)
@@ -194,14 +196,14 @@ class TestBacktestStrategy:
     def test_rsi_missing_indicator(self):
         """Test RSI strategy when RSI column is missing."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="RSI", days=30)
 
             assert "缺少 RSI" in result
@@ -209,14 +211,14 @@ class TestBacktestStrategy:
     def test_macd_missing_indicator(self):
         """Test MACD strategy when DIF/DEA columns are missing."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="MACD", days=30)
 
             assert "缺少 MACD" in result
@@ -224,14 +226,14 @@ class TestBacktestStrategy:
     def test_boll_missing_indicator(self):
         """Test BOLL strategy when BOLL columns are missing."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="BOLL", days=30)
 
             assert "缺少 BOLL" in result
@@ -239,30 +241,30 @@ class TestBacktestStrategy:
     def test_kdj_missing_indicator(self):
         """Test KDJ strategy when KDJ columns are missing."""
         dates = pd.date_range("2024-01-01", periods=30)
-        mock_prices = "日期,开盘,收盘,最高,最低\n" + "\n".join(
+        mock_prices = "date,open,high,low,close\n" + "\n".join(
             [
-                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{10.5 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1}"
+                f"{d.strftime('%Y-%m-%d')},{10 + i * 0.1},{11 + i * 0.1},{9.5 + i * 0.1},{10.5 + i * 0.1}"
                 for i, d in enumerate(dates)
             ]
         )
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="KDJ", days=30)
 
             assert "缺少 KDJ" in result
 
     def test_parse_failure(self):
         """Test backtest when price data cannot be parsed."""
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value="invalid,csv,data"):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value="invalid,csv,data"):
             result = backtest_fn(symbol="000001", market="sh", strategy="SMA", days=30)
 
             assert "数据不足" in result or "解析失败" in result
 
     def test_empty_dataframe(self):
         """Test backtest with empty data after header."""
-        mock_prices = "日期,开盘,收盘,最高,最低\n"
+        mock_prices = "date,open,high,low,close\n"
 
-        with mock.patch.object(analysis_module.stock_prices, "fn", return_value=mock_prices):
+        with mock.patch.object(analysis_module.market_prices, "fn", return_value=mock_prices):
             result = backtest_fn(symbol="000001", market="sh", strategy="SMA", days=30)
 
             assert "数据不足" in result
