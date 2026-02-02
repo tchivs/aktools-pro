@@ -6,7 +6,7 @@ from pydantic import Field
 
 from ..server import mcp
 from ..shared.fields import field_market, field_symbol
-from .stocks import stock_info, stock_news, stock_prices
+from .stocks import market_prices, stock_info, stock_news
 
 
 @mcp.tool(
@@ -24,7 +24,7 @@ async def composite_stock_diagnostic(
     # 通过 .fn 属性访问原始函数
     if ctx:
         await ctx.report_progress(20, 100, "获取历史价格...")
-    price_data = stock_prices.fn(symbol, market, limit=5)
+    price_data = market_prices.fn(symbol, market, limit=5)
 
     if ctx:
         await ctx.report_progress(40, 100, "获取基本面信息...")
@@ -53,9 +53,11 @@ async def composite_stock_diagnostic(
 )
 def draw_ascii_chart(symbol: str = field_symbol, market: str = field_market):
     # 通过 .fn 属性访问原始函数
-    data = stock_prices.fn(symbol, market, limit=20)
+    data = market_prices.fn(symbol, market, limit=20)
+    if not data or data.startswith("error,"):
+        return "数据不足，无法绘图"
     lines = data.strip().split("\n")[1:]
-    prices = [float(line.split(",")[2]) for line in lines]
+    prices = [float(line.split(",")[4]) for line in lines if line]
 
     if not prices:
         return "数据不足，无法绘图"
@@ -88,8 +90,8 @@ def backtest_strategy(
     strategy: str = Field("SMA", description="策略类型: SMA/RSI/MACD/BOLL/MA_CROSS/KDJ"),
     days: int = Field(252, description="回测天数"),
 ):
-    data = stock_prices.fn(symbol=symbol, market=market, limit=days)
-    if not data or data.startswith("Not Found"):
+    data = market_prices.fn(symbol=symbol, market=market, limit=days)
+    if not data or data.startswith("error,"):
         return f"未找到可回测数据: {symbol}.{market}"
 
     try:
@@ -97,11 +99,11 @@ def backtest_strategy(
     except Exception:
         return "价格数据解析失败"
 
-    if dfs is None or dfs.empty or "收盘" not in dfs.columns:
+    if dfs is None or dfs.empty or "close" not in dfs.columns:
         return "数据不足，无法回测"
 
-    close = pd.to_numeric(dfs["收盘"], errors="coerce")
-    dfs = dfs.assign(收盘=close).dropna(subset=["收盘"])
+    close = pd.to_numeric(dfs["close"], errors="coerce")
+    dfs = dfs.assign(close=close).dropna(subset=["close"])
     if dfs.empty:
         return "数据不足，无法回测"
 
@@ -109,14 +111,14 @@ def backtest_strategy(
     if strategy_key == "SMA":
         short_window = 5
         long_window = 20
-        dfs["ma_short"] = dfs["收盘"].rolling(short_window).mean()
-        dfs["ma_long"] = dfs["收盘"].rolling(long_window).mean()
+        dfs["ma_short"] = dfs["close"].rolling(short_window).mean()
+        dfs["ma_long"] = dfs["close"].rolling(long_window).mean()
         signal = pd.Series((dfs["ma_short"] > dfs["ma_long"]).astype(int), index=dfs.index)
         strategy_desc = f"SMA{short_window}/{long_window}"
     elif strategy_key == "RSI":
-        if "RSI" not in dfs.columns:
+        if "rsi" not in dfs.columns:
             return "数据缺少 RSI 指标，无法回测"
-        rsi = pd.Series(pd.to_numeric(dfs["RSI"], errors="coerce"), index=dfs.index)
+        rsi = pd.Series(pd.to_numeric(dfs["rsi"], errors="coerce"), index=dfs.index)
         positions = []
         position = 0
         for value in rsi.to_list():
@@ -131,20 +133,20 @@ def backtest_strategy(
         signal = pd.Series(positions, index=dfs.index)
         strategy_desc = "RSI(30/70)"
     elif strategy_key == "MACD":
-        if "DIF" not in dfs.columns or "DEA" not in dfs.columns:
+        if "dif" not in dfs.columns or "dea" not in dfs.columns:
             return "数据缺少 MACD 指标，无法回测"
-        dif = pd.Series(pd.to_numeric(dfs["DIF"], errors="coerce"), index=dfs.index)
-        dea = pd.Series(pd.to_numeric(dfs["DEA"], errors="coerce"), index=dfs.index)
+        dif = pd.Series(pd.to_numeric(dfs["dif"], errors="coerce"), index=dfs.index)
+        dea = pd.Series(pd.to_numeric(dfs["dea"], errors="coerce"), index=dfs.index)
         signal = pd.Series((dif > dea).astype(int), index=dfs.index)
         strategy_desc = "MACD(DIF/DEA)"
     elif strategy_key == "BOLL":
-        if "BOLL.U" not in dfs.columns or "BOLL.L" not in dfs.columns:
+        if "boll_u" not in dfs.columns or "boll_l" not in dfs.columns:
             return "数据缺少 BOLL 指标，无法回测"
-        boll_u = pd.Series(pd.to_numeric(dfs["BOLL.U"], errors="coerce"), index=dfs.index)
-        boll_l = pd.Series(pd.to_numeric(dfs["BOLL.L"], errors="coerce"), index=dfs.index)
+        boll_u = pd.Series(pd.to_numeric(dfs["boll_u"], errors="coerce"), index=dfs.index)
+        boll_l = pd.Series(pd.to_numeric(dfs["boll_l"], errors="coerce"), index=dfs.index)
         positions = []
         position = 0
-        for i, price in enumerate(dfs["收盘"].to_list()):
+        for i, price in enumerate(dfs["close"].to_list()):
             if pd.isna(boll_u.iloc[i]) or pd.isna(boll_l.iloc[i]):
                 positions.append(position)
                 continue
@@ -156,15 +158,15 @@ def backtest_strategy(
         signal = pd.Series(positions, index=dfs.index)
         strategy_desc = "BOLL(突破下轨买入/上轨卖出)"
     elif strategy_key in ("MA_CROSS", "MACROSS"):
-        ma10 = dfs["收盘"].rolling(10).mean()
-        ma30 = dfs["收盘"].rolling(30).mean()
+        ma10 = dfs["close"].rolling(10).mean()
+        ma30 = dfs["close"].rolling(30).mean()
         signal = pd.Series((ma10 > ma30).astype(int), index=dfs.index)
         strategy_desc = "MA_CROSS(10/30)"
     elif strategy_key == "KDJ":
-        if "KDJ.K" not in dfs.columns or "KDJ.D" not in dfs.columns:
+        if "kdj_k" not in dfs.columns or "kdj_d" not in dfs.columns:
             return "数据缺少 KDJ 指标，无法回测"
-        kdj_k = pd.Series(pd.to_numeric(dfs["KDJ.K"], errors="coerce"), index=dfs.index)
-        kdj_d = pd.Series(pd.to_numeric(dfs["KDJ.D"], errors="coerce"), index=dfs.index)
+        kdj_k = pd.Series(pd.to_numeric(dfs["kdj_k"], errors="coerce"), index=dfs.index)
+        kdj_d = pd.Series(pd.to_numeric(dfs["kdj_d"], errors="coerce"), index=dfs.index)
         positions = []
         position = 0
         prev_k, prev_d = None, None
@@ -187,7 +189,7 @@ def backtest_strategy(
     else:
         return f"不支持的策略类型: {strategy}"
 
-    returns = dfs["收盘"].pct_change().fillna(0)
+    returns = dfs["close"].pct_change().fillna(0)
     position = signal.shift(1).fillna(0)
     strat_returns = returns.mul(position)
     equity = (1 + strat_returns).cumprod()
@@ -196,10 +198,10 @@ def backtest_strategy(
     max_drawdown = drawdown.min()
 
     active = strat_returns[strat_returns != 0]
-    win_rate = (active > 0).mean() if not active.empty else None
+    win_rate = (active > 0).mean() if len(active) else None
 
-    start_date = str(dfs["日期"].iloc[0]) if "日期" in dfs.columns else "-"
-    end_date = str(dfs["日期"].iloc[-1]) if "日期" in dfs.columns else "-"
+    start_date = str(dfs["date"].iloc[0]) if "date" in dfs.columns else "-"
+    end_date = str(dfs["date"].iloc[-1]) if "date" in dfs.columns else "-"
     win_text = f"{win_rate:.2%}" if win_rate is not None else "N/A"
     return (
         f"--- 策略回测: {symbol} ({market}) ---\n"
