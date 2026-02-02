@@ -8,6 +8,7 @@ from pydantic import Field
 from mcp_aktools.server import mcp
 from mcp_aktools.shared.indicators import add_technical_indicators
 from mcp_aktools.shared.normalize import normalize_price_df
+from mcp_aktools.shared.schema import format_error_csv
 from mcp_aktools.shared.utils import ak_cache
 
 # 上海金交所品种映射
@@ -113,7 +114,7 @@ def pm_international_prices(
     """获取国际贵金属实时价格"""
     df = ak_cache(ak.futures_foreign_commodity_realtime, symbol=symbol, ttl=300)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=symbol)
 
     return df.to_csv(index=False, float_format="%.2f")
 
@@ -135,7 +136,7 @@ def pm_etf_holdings(
         return "不支持的金属类型，仅支持: gold, silver"
 
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=metal)
 
     df = df.tail(limit)
     return df.to_csv(index=False, float_format="%.2f")
@@ -152,7 +153,7 @@ def pm_comex_inventory(
     """获取COMEX库存数据"""
     df = ak_cache(ak.futures_comex_inventory, symbol=metal)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=metal)
 
     df = df.tail(limit)
     return df.to_csv(index=False, float_format="%.2f")
@@ -168,7 +169,7 @@ def pm_basis(
     """获取贵金属期现基差"""
     df = ak_cache(ak.futures_spot_price, vars_list=[metal])
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=metal)
 
     return df.to_csv(index=False, float_format="%.2f")
 
@@ -190,7 +191,7 @@ def pm_benchmark_price(
         return "不支持的金属类型，仅支持: gold, silver"
 
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=metal)
 
     df = df.tail(limit)
     return df.to_csv(index=False, float_format="%.2f")

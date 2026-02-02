@@ -184,10 +184,11 @@ def sector_rotation():
 def stock_news_global():
     news = []
     try:
-        dfs = ak.stock_info_global_sina()
-        csv = dfs.to_csv(index=False, float_format="%.2f").strip()
-        csv = csv.replace(datetime.now().strftime("%Y-%m-%d "), "")
-        news.extend(csv.split("\n"))
+        dfs = ak_cache(ak.stock_info_global_sina, ttl=300, key="stock_info_global_sina")
+        if dfs is not None and not dfs.empty:
+            csv = dfs.to_csv(index=False, float_format="%.2f").strip()
+            csv = csv.replace(datetime.now().strftime("%Y-%m-%d "), "")
+            news.extend(csv.split("\n"))
     except Exception:
         pass
     news.extend(newsnow_news())
@@ -237,7 +238,7 @@ def market_anomaly_scan(
     ),
 ):
     try:
-        dfs = ak.stock_changes_em(symbol=symbol)
+        dfs = ak_cache(ak.stock_changes_em, symbol=symbol, ttl=30, key=f"stock_changes_em-{symbol}")
         if dfs is None or dfs.empty:
             return f"当前没有检测到 [{symbol}] 类型的异动信号"
         dfs = dfs.head(20)

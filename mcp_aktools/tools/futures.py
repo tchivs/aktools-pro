@@ -6,6 +6,7 @@ from pydantic import Field
 
 from mcp_aktools.server import mcp
 from mcp_aktools.shared.normalize import normalize_price_df
+from mcp_aktools.shared.schema import format_error_csv
 from mcp_aktools.shared.utils import ak_cache
 
 # 主要期货品种映射
@@ -107,7 +108,7 @@ def futures_inventory(
     # 使用 akshare 的期货库存数据接口
     df = ak_cache(ak.futures_inventory_em, symbol=symbol_code)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=symbol)
 
     # 确保日期列存在并格式化
     if "日期" in df.columns:
@@ -136,7 +137,7 @@ def futures_basis(
     # 使用 akshare 的期现价差数据接口
     df = ak_cache(ak.futures_spot_price, symbol=symbol_code)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=symbol)
 
     # 确保日期列存在并格式化
     if "日期" in df.columns:
@@ -165,6 +166,6 @@ def futures_positions(
     # 使用 akshare 的期货持仓排名数据接口
     df = ak_cache(ak.futures_hold_pos_sina, symbol=symbol_code)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=symbol)
 
     return df.to_csv(index=False, float_format="%.2f")

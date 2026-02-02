@@ -12,6 +12,7 @@ from ..server import mcp
 from ..shared.constants import BINANCE_BASE_URL, OKX_BASE_URL, USER_AGENT
 from ..shared.indicators import add_technical_indicators
 from ..shared.normalize import normalize_price_df
+from ..shared.schema import format_error_csv
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
@@ -143,7 +144,7 @@ def crypto_sentiment_metrics(
     loan_data = pd.DataFrame((loan_res.json() or {}).get("data", []))
     taker_data = pd.DataFrame((taker_res.json() or {}).get("data", []))
     if loan_data.empty and taker_data.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "okx", fallback=symbol)
 
     if not loan_data.empty:
         loan_data.columns = ["时间", "多空比"]

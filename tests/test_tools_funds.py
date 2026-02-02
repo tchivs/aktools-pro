@@ -41,8 +41,8 @@ class TestFundInfo:
         with mock.patch("mcp_aktools.tools.funds.ak_cache", return_value=pd.DataFrame()):
             result = fund_info_fn(code="000001")
 
-            assert isinstance(result, pd.DataFrame)
-            assert result.empty
+            assert isinstance(result, str)
+            assert "error" in result
 
 
 class TestFundNav:

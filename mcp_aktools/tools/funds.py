@@ -5,6 +5,7 @@ import pandas as pd
 from pydantic import Field
 
 from mcp_aktools.server import mcp
+from mcp_aktools.shared.schema import format_error_csv
 from mcp_aktools.shared.utils import ak_cache
 
 
@@ -18,7 +19,7 @@ def fund_info(
     """获取基金基本信息"""
     df = ak_cache(ak.fund_open_fund_info_em, symbol=code)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=code)
 
     return df.to_csv(index=False)
 
@@ -34,7 +35,7 @@ def fund_nav(
     """获取基金净值历史"""
     df = ak_cache(ak.fund_open_fund_daily_em, symbol=code)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=code)
 
     # 取最近的数据
     df = df.tail(limit).copy()
@@ -56,7 +57,7 @@ def fund_holdings(
     """获取基金持仓明细"""
     df = ak_cache(ak.fund_portfolio_hold_em, symbol=code, date="")
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=code)
 
     return df.to_csv(index=False, float_format="%.2f")
 
@@ -74,7 +75,7 @@ def fund_ranking(
     """获取基金排行榜"""
     df = ak_cache(ak.fund_open_fund_rank_em, symbol=type)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return format_error_csv("empty data", "akshare", fallback=type)
 
     # 限制返回数量，避免数据过大
     df = df.head(100).copy()

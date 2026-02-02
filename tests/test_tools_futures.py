@@ -87,7 +87,8 @@ class TestFuturesInventory:
         with mock.patch("mcp_aktools.tools.futures.ak_cache", return_value=mock_df):
             result = futures_inventory_fn(symbol="螺纹钢")
 
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result
 
 
 class TestFuturesBasis:
@@ -117,7 +118,8 @@ class TestFuturesBasis:
         with mock.patch("mcp_aktools.tools.futures.ak_cache", return_value=mock_df):
             result = futures_basis_fn(symbol="螺纹钢")
 
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result
 
 
 class TestFuturesPositions:
@@ -147,4 +149,5 @@ class TestFuturesPositions:
         with mock.patch("mcp_aktools.tools.futures.ak_cache", return_value=mock_df):
             result = futures_positions_fn(symbol="螺纹钢")
 
-            assert isinstance(result, pd.DataFrame)
+            assert isinstance(result, str)
+            assert "error" in result

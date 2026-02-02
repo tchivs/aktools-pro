@@ -289,20 +289,20 @@ class TestMarketAnomalyScan:
             }
         )
 
-        with mock.patch("mcp_aktools.tools.market.ak.stock_changes_em", return_value=mock_df):
+        with mock.patch("mcp_aktools.tools.market.ak_cache", return_value=mock_df):
             result = anomaly_scan_fn(symbol="火箭发射")
 
             assert isinstance(result, str)
             assert "异动扫描" in result
 
     def test_returns_no_signal_message(self):
-        with mock.patch("mcp_aktools.tools.market.ak.stock_changes_em", return_value=pd.DataFrame()):
+        with mock.patch("mcp_aktools.tools.market.ak_cache", return_value=pd.DataFrame()):
             result = anomaly_scan_fn(symbol="火箭发射")
         assert "没有检测到" in result
 
     def test_handles_exception(self):
         """Test that function handles exceptions gracefully."""
-        with mock.patch("mcp_aktools.tools.market.ak.stock_changes_em", side_effect=Exception("API Error")):
+        with mock.patch("mcp_aktools.tools.market.ak_cache", side_effect=Exception("API Error")):
             result = anomaly_scan_fn()
 
             assert isinstance(result, str)
