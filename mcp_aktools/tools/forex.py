@@ -5,6 +5,7 @@ import pandas as pd
 from pydantic import Field
 
 from mcp_aktools.server import mcp
+from mcp_aktools.shared.normalize import normalize_rate_df
 from mcp_aktools.shared.utils import ak_cache
 
 # 主要货币对映射
@@ -21,30 +22,59 @@ FX_PAIRS = {
 
 
 @mcp.tool(
-    title="获取实时外汇汇率",
-    description="获取主要货币对的实时汇率报价，包括美元、欧元、日元、英镑等主流货币",
+    title="获取外汇汇率",
+    description="获取主要货币对的实时汇率报价，输出标准化字段",
 )
-def fx_spot_rates(
-    pair: str = Field(
+def fx_rates(
+    symbol: str = Field(
         "USDCNY",
         description="货币对代码，支持: USDCNY(美元/人民币), EURUSD(欧元/美元), USDJPY(美元/日元), GBPUSD(英镑/美元), AUDUSD(澳元/美元), USDCAD(美元/加元), USDCHF(美元/瑞郎), NZDUSD(纽元/美元)",
     ),
 ):
     """获取实时外汇汇率"""
-    df = ak_cache(ak.fx_spot_quote, ttl=300)
-    if df is None or df.empty:
-        return pd.DataFrame()
+    raw = ak_cache(ak.fx_spot_quote, ttl=300)
+    if not isinstance(raw, pd.DataFrame):
+        return normalize_rate_df(None, {}, source="akshare", currency=symbol.upper(), limit=1)
+    df = raw.copy()
 
-    # 如果指定了货币对，尝试过滤
-    if pair and pair.upper() in FX_PAIRS:
-        # 尝试根据货币对名称过滤
-        pair_name = FX_PAIRS[pair.upper()]
-        if "货币对" in df.columns:
-            df = df[df["货币对"].str.contains(pair, case=False, na=False)]
-        elif "名称" in df.columns:
-            df = df[df["名称"].str.contains(pair_name, case=False, na=False)]
+    data = df.copy()
+    if symbol and symbol.upper() in FX_PAIRS:
+        pair_name = FX_PAIRS[symbol.upper()]
+        if "货币对" in data.columns:
+            mask = data["货币对"].str.contains(symbol, case=False, na=False)
+            data = data.loc[mask]
+            if isinstance(data, pd.Series):
+                data = data.to_frame().T
+        elif "名称" in data.columns:
+            mask = data["名称"].str.contains(pair_name, case=False, na=False)
+            data = data.loc[mask]
+            if isinstance(data, pd.Series):
+                data = data.to_frame().T
 
-    return df.to_csv(index=False, float_format="%.4f")
+    rate_column = None
+    for candidate in ["最新价", "现汇卖出价", "现汇买入价", "汇率"]:
+        if candidate in data.columns:
+            rate_column = candidate
+            break
+
+    if rate_column is None:
+        return normalize_rate_df(None, {}, source="akshare", currency=symbol.upper(), limit=1)
+
+    data = data.copy()
+    data["rate"] = data[rate_column]
+    if "时间" in data.columns:
+        data["date"] = data["时间"]
+    elif "日期" in data.columns:
+        data["date"] = data["日期"]
+
+    return normalize_rate_df(
+        data,
+        {"date": "date", "rate": "rate"},
+        source="akshare",
+        currency=symbol.upper() if symbol else "FX",
+        limit=len(data),
+        float_format="%.4f",
+    )
 
 
 @mcp.tool(
@@ -52,7 +82,7 @@ def fx_spot_rates(
     description="获取指定货币对的历史汇率数据，用于分析汇率走势和波动",
 )
 def fx_history(
-    pair: str = Field(
+    symbol: str = Field(
         "USDCNY",
         description="货币对代码，支持: USDCNY(美元/人民币), EURUSD(欧元/美元), USDJPY(美元/日元), GBPUSD(英镑/美元), AUDUSD(澳元/美元), USDCAD(美元/加元), USDCHF(美元/瑞郎), NZDUSD(纽元/美元)",
     ),
@@ -60,34 +90,29 @@ def fx_history(
 ):
     """获取外汇历史汇率"""
     # 使用 akshare 的外汇历史数据接口
-    df = ak_cache(ak.fx_pair_quote, symbol=pair.upper())
-    if df is None or df.empty:
-        return pd.DataFrame()
+    raw = ak_cache(ak.fx_pair_quote, symbol=symbol.upper())
+    if not isinstance(raw, pd.DataFrame):
+        return normalize_rate_df(None, {}, source="akshare", currency=symbol.upper(), limit=limit)
+    df = raw.copy()
 
-    # 取最近的数据
     df = df.tail(limit).copy()
+    date_col = "日期" if "日期" in df.columns else "时间" if "时间" in df.columns else None
+    rate_col = None
+    for candidate in ["收盘价", "最新价", "收盘"]:
+        if candidate in df.columns:
+            rate_col = candidate
+            break
+    if date_col is None or rate_col is None:
+        return normalize_rate_df(None, {}, source="akshare", currency=symbol.upper(), limit=limit)
 
-    # 确保日期列存在并格式化
-    if "日期" in df.columns:
-        df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
-    elif "时间" in df.columns:
-        df["日期"] = pd.to_datetime(df["时间"], errors="coerce")
-        df = df.drop(columns=["时间"])
+    df = df.copy()
+    df["rate"] = df[rate_col]
 
-    return df.to_csv(index=False, float_format="%.4f")
-
-
-@mcp.tool(
-    title="获取外汇交叉汇率表",
-    description="获取主要货币之间的交叉汇率矩阵，方便快速查看多个货币对的汇率关系",
-)
-def fx_cross_rates():
-    """获取外汇交叉汇率表"""
-    # 使用 akshare 的外汇交叉汇率接口
-    df = ak_cache(ak.fx_spot_quote, ttl=300)
-    if df is None or df.empty:
-        return pd.DataFrame()
-
-    # 尝试构建交叉汇率表
-    # 如果数据包含多个货币对，返回完整列表
-    return df.to_csv(index=False, float_format="%.4f")
+    return normalize_rate_df(
+        df,
+        {"date": date_col, "rate": "rate"},
+        source="akshare",
+        currency=symbol.upper(),
+        limit=limit,
+        float_format="%.4f",
+    )
