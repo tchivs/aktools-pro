@@ -43,30 +43,29 @@ def resource_pm_analysis():
     """提供贵金属分析SOP"""
     return """
     贵金属分析 SOP:
-    
+
     1. 价格趋势判断:
        - 上海金交所现货价格为国内定价基准
        - 伦敦金(XAU)为国际定价基准
        - 内外盘溢价 > 2% 表示国内需求强劲
-       - 内外盘折价 > 2% 表示国内抛压较大
-    
+    - 内外盘折价 > 2% 表示国内抛压较大
+
     2. 资金流向判断:
        - ETF持仓连续增加 → 机构看多，趋势延续
        - ETF持仓连续减少 → 机构看空，注意风险
        - COMEX库存下降 → 实物需求强劲，利多
-       - COMEX库存上升 → 实物需求疲软，利空
-    
+    - COMEX库存上升 → 实物需求疲软，利空
+
     3. 期现基差解读:
        - 正基差(期货>现货) → 市场预期上涨(Contango)
        - 负基差(期货<现货) → 现货紧缺或预期下跌(Backwardation)
-       - 基差扩大 → 套利空间增加
-    
+    - 基差扩大 → 套利空间增加
+
     4. 避险情绪指标:
        - 美元指数走弱 → 利多黄金
        - 实际利率下降 → 利多黄金
        - 地缘风险上升 → 利多黄金
-       - VIX恐慌指数上升 → 利多黄金
-    
+    - VIX恐慌指数上升 → 利多黄金
     5. 金银比价:
        - 金银比 > 80 → 白银相对低估，可关注白银
        - 金银比 < 60 → 白银相对高估，可关注黄金
@@ -80,7 +79,7 @@ def stock_dynamic_analysis(symbol: str) -> str:
 # {symbol} 专属分析建议
 
 ## 推荐工具链
-1. `stock_prices(symbol="{symbol}", limit=30)` - 获取近期走势
+1. `market_prices(symbol="{symbol}", limit=30)` - 获取近期走势
 2. `stock_news(symbol="{symbol}", limit=5)` - 获取相关新闻
 3. `draw_ascii_chart(symbol="{symbol}")` - 可视化趋势
 4. `stock_indicators_a(symbol="{symbol}")` - 财务指标
@@ -92,7 +91,7 @@ def stock_dynamic_analysis(symbol: str) -> str:
 - 成交量异常放大
 
 ## 分析流程
-1. 先用 stock_prices 获取技术面数据
+1. 先用 market_prices 获取技术面数据
 2. 用 stock_indicators 获取基本面数据
 3. 用 stock_news 获取消息面
 4. 综合三者给出判断
@@ -131,14 +130,13 @@ def crypto_dynamic_analysis(symbol: str) -> str:
 # {symbol} 加密货币分析指南
 
 ## 推荐工具链
-1. `okx_prices(instId="{symbol}-USDT", bar="4H", limit=30)` - 获取K线数据
-2. `okx_loan_ratios(symbol="{symbol}")` - 杠杆多空比
-3. `okx_taker_volume(symbol="{symbol}")` - 主动买卖量
+1. `crypto_prices(symbol="{symbol}-USDT", period="4H", limit=30)` - 获取K线数据
+2. `crypto_sentiment_metrics(symbol="{symbol}")` - 情绪指标
 4. `okx_funding_rate(symbol="{symbol}")` - 资金费率
 5. `okx_open_interest(symbol="{symbol}")` - 合约持仓量
 6. `binance_ai_report(symbol="{symbol}")` - AI研报
-7. `draw_crypto_chart(symbol="{symbol}")` - 可视化走势
-8. `crypto_composite_diagnostic(symbol="{symbol}")` - 综合诊断
+6. `draw_crypto_chart(symbol="{symbol}")` - 可视化走势
+7. `crypto_composite_diagnostic(symbol="{symbol}")` - 综合诊断
 
 ## 关键指标关注
 - 多空比 > 1.5 表示多头过热，需警惕回调
