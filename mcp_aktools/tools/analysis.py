@@ -1,3 +1,4 @@
+import asyncio
 from io import StringIO
 
 import pandas as pd
@@ -21,18 +22,15 @@ async def composite_stock_diagnostic(
     if ctx:
         await ctx.report_progress(0, 100, "开始综合诊断...")
 
-    # 通过 .fn 属性访问原始函数
     if ctx:
-        await ctx.report_progress(20, 100, "获取历史价格...")
-    price_data = market_prices.fn(symbol, market, limit=5)
+        await ctx.report_progress(20, 100, "并行获取数据...")
 
-    if ctx:
-        await ctx.report_progress(40, 100, "获取基本面信息...")
-    fundamental = stock_info.fn(symbol, market)
+    loop = asyncio.get_event_loop()
+    price_task = loop.run_in_executor(None, market_prices.fn, symbol, market, "daily", 5, "equity")
+    fundamental_task = loop.run_in_executor(None, stock_info.fn, symbol, market)
+    news_task = loop.run_in_executor(None, stock_news.fn, symbol, 3)
 
-    if ctx:
-        await ctx.report_progress(60, 100, "获取新闻动态...")
-    news = stock_news.fn(symbol, limit=3)
+    price_data, fundamental, news = await asyncio.gather(price_task, fundamental_task, news_task)
 
     if ctx:
         await ctx.report_progress(80, 100, "汇总分析结果...")

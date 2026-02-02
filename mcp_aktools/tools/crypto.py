@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from io import StringIO
@@ -228,13 +229,14 @@ async def crypto_composite_diagnostic(
     inst_id = f"{symbol}-USDT"
 
     if ctx:
-        await ctx.report_progress(25, 100, "获取价格数据...")
-    price_data = crypto_prices.fn(symbol=inst_id, period="4H", limit=10)
+        await ctx.report_progress(20, 100, "并行获取数据...")
 
-    if ctx:
-        await ctx.report_progress(50, 100, "获取情绪指标...")
-    sentiment_data = crypto_sentiment_metrics.fn(symbol=symbol, period="1H", inst_type="SPOT")
-    ai_report = binance_ai_report.fn(symbol=symbol)
+    loop = asyncio.get_event_loop()
+    price_task = loop.run_in_executor(None, crypto_prices.fn, inst_id, "4H", 10)
+    sentiment_task = loop.run_in_executor(None, crypto_sentiment_metrics.fn, symbol, "1H", "SPOT")
+    ai_task = loop.run_in_executor(None, binance_ai_report.fn, symbol)
+
+    price_data, sentiment_data, ai_report = await asyncio.gather(price_task, sentiment_task, ai_task)
 
     if ctx:
         await ctx.report_progress(100, 100, "诊断完成")

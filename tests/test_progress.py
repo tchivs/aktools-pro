@@ -16,7 +16,7 @@ pm_composite_diagnostic_fn = precious_metals.pm_composite_diagnostic.fn
 async def test_search_reports_progress():
     mock_ctx = mock.AsyncMock()
 
-    with mock.patch("mcp_aktools.tools.stocks.ak_search", return_value=None):
+    with mock.patch("mcp_aktools.tools.stocks.ak_search_async", return_value=None):
         result = await search_fn(keyword="test", market="sh", ctx=mock_ctx)
 
     assert mock_ctx.report_progress.call_count >= 2
@@ -29,7 +29,7 @@ async def test_search_reports_progress_when_found():
     mock_info = mock.Mock()
     mock_info.to_string.return_value = "code    000001\nname    平安银行"
 
-    with mock.patch("mcp_aktools.tools.stocks.ak_search", return_value=mock_info):
+    with mock.patch("mcp_aktools.tools.stocks.ak_search_async", return_value=mock_info):
         result = await search_fn(keyword="平安", market="sh", ctx=mock_ctx)
 
     assert mock_ctx.report_progress.call_count >= 2
@@ -48,7 +48,7 @@ async def test_composite_stock_diagnostic_reports_progress():
     ):
         result = await composite_stock_diagnostic_fn(symbol="000001", market="sh", ctx=mock_ctx)
 
-    assert mock_ctx.report_progress.call_count >= 5
+    assert mock_ctx.report_progress.call_count >= 4
     assert "综合诊断报告" in result
 
 
@@ -63,7 +63,7 @@ async def test_crypto_composite_diagnostic_reports_progress():
     ):
         result = await crypto_composite_diagnostic_fn(symbol="BTC", ctx=mock_ctx)
 
-    assert mock_ctx.report_progress.call_count >= 4
+    assert mock_ctx.report_progress.call_count >= 3
     assert "加密货币综合诊断" in result
 
 

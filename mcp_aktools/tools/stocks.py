@@ -9,7 +9,7 @@ from ..server import mcp
 from ..shared.fields import field_market, field_symbol
 from ..shared.indicators import add_technical_indicators
 from ..shared.normalize import normalize_price_df
-from ..shared.utils import ak_cache, ak_search
+from ..shared.utils import ak_cache, ak_search, ak_search_async
 
 
 @mcp.tool(
@@ -28,7 +28,7 @@ async def search(
     if ctx:
         await ctx.report_progress(30, 100, "正在查询市场数据...")
 
-    info = ak_search(None, keyword, market)
+    info = await ak_search_async(None, keyword, market)
 
     if ctx:
         await ctx.report_progress(70, 100, "正在匹配关键词...")
