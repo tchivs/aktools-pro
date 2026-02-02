@@ -1,11 +1,13 @@
 from datetime import datetime
+from io import StringIO
 
+import pandas as pd
 from pydantic import Field
 
 from ..server import mcp
 from ..shared.fields import field_market
 from ..shared.utils import load_portfolio, save_portfolio
-from .stocks import stock_prices
+from .stocks import market_prices
 
 
 @mcp.tool(
@@ -41,8 +43,9 @@ def portfolio_view():
     results = []
     for k, v in p.items():
         try:
-            prices = stock_prices.fn(v["symbol"], v["market"], limit=1)
-            current_price = float(prices.split("\n")[-1].split(",")[2])
+            prices = market_prices.fn(v["symbol"], v["market"], limit=1)
+            df = pd.read_csv(StringIO(prices))
+            current_price = float(df["close"].iloc[-1])
             profit = (current_price - v["price"]) * v["volume"]
             ratio = (current_price / v["price"] - 1) * 100
             results.append(
@@ -65,8 +68,9 @@ def portfolio_chart():
     holdings = []
     for k, v in p.items():
         try:
-            prices = stock_prices.fn(v["symbol"], v["market"], limit=1)
-            current_price = float(prices.split("\n")[-1].split(",")[2])
+            prices = market_prices.fn(v["symbol"], v["market"], limit=1)
+            df = pd.read_csv(StringIO(prices))
+            current_price = float(df["close"].iloc[-1])
             ratio = (current_price / v["price"] - 1) * 100
             holdings.append({"name": k, "ratio": ratio})
         except Exception:

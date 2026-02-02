@@ -5,6 +5,7 @@ import pandas as pd
 from pydantic import Field
 
 from mcp_aktools.server import mcp
+from mcp_aktools.shared.normalize import normalize_price_df
 from mcp_aktools.shared.utils import ak_cache
 
 # 主要期货品种映射
@@ -48,7 +49,13 @@ def futures_prices(
     # 使用 akshare 的期货主力合约数据接口
     df = ak_cache(ak.futures_main_sina, symbol=symbol_code)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return normalize_price_df(
+            None,
+            {},
+            source="akshare",
+            currency="CNY",
+            limit=limit,
+        )
 
     # 取最近的数据
     df = df.tail(limit).copy()
@@ -60,7 +67,27 @@ def futures_prices(
         df["日期"] = pd.to_datetime(df["时间"], errors="coerce")
         df = df.drop(columns=["时间"])
 
-    return df.to_csv(index=False, float_format="%.2f")
+    date_col = "日期" if "日期" in df.columns else "时间" if "时间" in df.columns else "日期"
+    open_col = "开盘价" if "开盘价" in df.columns else "开盘"
+    high_col = "最高价" if "最高价" in df.columns else "最高"
+    low_col = "最低价" if "最低价" in df.columns else "最低"
+    close_col = "收盘价" if "收盘价" in df.columns else "收盘"
+
+    return normalize_price_df(
+        df,
+        {
+            "date": date_col,
+            "open": open_col,
+            "high": high_col,
+            "low": low_col,
+            "close": close_col,
+            "volume": "成交量",
+        },
+        source="akshare",
+        currency="CNY",
+        limit=limit,
+        float_format="%.2f",
+    )
 
 
 @mcp.tool(

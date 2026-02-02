@@ -8,6 +8,7 @@ from pydantic import Field
 from ..server import mcp
 from ..shared.fields import field_market, field_symbol
 from ..shared.indicators import add_technical_indicators
+from ..shared.normalize import normalize_price_df
 from ..shared.utils import ak_cache, ak_search
 
 
@@ -112,30 +113,39 @@ def institutional_holding_summary(symbol: str = field_symbol):
 
 
 @mcp.tool(
-    title="获取股票历史价格",
-    description="根据股票代码和市场获取股票历史价格及技术指标, 不支持加密货币",
+    title="获取市场历史价格",
+    description="统一获取股票/ETF历史价格及技术指标，输出标准化行情字段",
 )
-def stock_prices(
+def market_prices(
     symbol: str = field_symbol,
     market: str = field_market,
     period: str = Field("daily", description="周期，如: daily(日线), weekly(周线，不支持美股)"),
     limit: int = Field(30, description="返回数量(int)", strict=False),
+    asset: str = Field("equity", description="资产类型: equity/etf"),
 ) -> str:
+    if not isinstance(market, str):
+        market = "sh"
+    if not isinstance(period, str):
+        period = "daily"
+    if not isinstance(asset, str):
+        asset = "equity"
     if period == "weekly":
         delta = {"weeks": limit + 62}
     else:
         delta = {"days": limit + 62}
     start_date = (datetime.now() - timedelta(**delta)).strftime("%Y%m%d")
     markets = [
-        ["sh", ak.stock_zh_a_hist, {}],
-        ["sz", ak.stock_zh_a_hist, {}],
-        ["hk", ak.stock_hk_hist, {}],
-        ["us", stock_us_daily, {}],
-        ["sh", fund_etf_hist_sina, {"market": "sh"}],
-        ["sz", fund_etf_hist_sina, {"market": "sz"}],
+        ["sh", ak.stock_zh_a_hist, {}, "equity"],
+        ["sz", ak.stock_zh_a_hist, {}, "equity"],
+        ["hk", ak.stock_hk_hist, {}, "equity"],
+        ["us", stock_us_daily, {}, "equity"],
+        ["sh", fund_etf_hist_sina, {"market": "sh"}, "etf"],
+        ["sz", fund_etf_hist_sina, {"market": "sz"}, "etf"],
     ]
     for m in markets:
         if m[0] != market:
+            continue
+        if m[3] != asset:
             continue
         extra = m[2] if isinstance(m[2], dict) else {}
         kws = {"period": period, "start_date": start_date, **extra}
@@ -143,28 +153,43 @@ def stock_prices(
         if dfs is None or dfs.empty:
             continue
         add_technical_indicators(dfs, dfs["收盘"], dfs["最低"], dfs["最高"])
-        columns = [
-            "日期",
-            "开盘",
-            "收盘",
-            "最高",
-            "最低",
-            "成交量",
-            "换手率",
-            "MACD",
-            "DIF",
-            "DEA",
-            "KDJ.K",
-            "KDJ.D",
-            "KDJ.J",
-            "RSI",
-            "BOLL.U",
-            "BOLL.M",
-            "BOLL.L",
-        ]
-        all_lines = dfs.to_csv(columns=columns, index=False, float_format="%.2f").strip().split("\n")
-        return "\n".join([all_lines[0], *all_lines[-limit:]])
-    return f"Not Found for {symbol}.{market}"
+        currency_map = {"sh": "CNY", "sz": "CNY", "hk": "HKD", "us": "USD"}
+        currency = currency_map.get(market, "CNY")
+        return normalize_price_df(
+            dfs,
+            {
+                "date": "日期",
+                "open": "开盘",
+                "high": "最高",
+                "low": "最低",
+                "close": "收盘",
+                "volume": "成交量",
+                "amount": "成交额",
+            },
+            source="akshare",
+            currency=currency,
+            limit=limit,
+            float_format="%.2f",
+            indicator_map={
+                "macd": "MACD",
+                "dif": "DIF",
+                "dea": "DEA",
+                "kdj_k": "KDJ.K",
+                "kdj_d": "KDJ.D",
+                "kdj_j": "KDJ.J",
+                "rsi": "RSI",
+                "boll_u": "BOLL.U",
+                "boll_m": "BOLL.M",
+                "boll_l": "BOLL.L",
+            },
+        )
+    return normalize_price_df(
+        None,
+        {},
+        source="akshare",
+        currency="",
+        limit=limit,
+    )
 
 
 def stock_us_daily(symbol, start_date="2025-01-01", period="daily"):

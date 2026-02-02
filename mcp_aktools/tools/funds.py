@@ -80,33 +80,3 @@ def fund_ranking(
     df = df.head(100).copy()
 
     return df.to_csv(index=False, float_format="%.2f")
-
-
-@mcp.tool(
-    title="获取ETF历史价格",
-    description="获取ETF基金的历史价格数据，包括开盘价、收盘价、最高价、最低价、成交量等，用于分析ETF走势",
-)
-def etf_prices(
-    code: str = Field("159915", description="ETF代码，例如: 159915(创业板ETF)"),
-    limit: int = Field(30, description="返回数量(int)，建议30-252", strict=False),
-):
-    """获取ETF历史价格"""
-    df = ak_cache(
-        ak.fund_etf_hist_em,
-        symbol=code,
-        period="daily",
-        start_date="20200101",
-        end_date="20991231",
-        adjust="",
-    )
-    if df is None or df.empty:
-        return pd.DataFrame()
-
-    # 取最近的数据
-    df = df.tail(limit).copy()
-
-    # 确保日期列存在并格式化
-    if "日期" in df.columns:
-        df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
-
-    return df.to_csv(index=False, float_format="%.4f")

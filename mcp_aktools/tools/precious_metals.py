@@ -7,6 +7,7 @@ from pydantic import Field
 
 from mcp_aktools.server import mcp
 from mcp_aktools.shared.indicators import add_technical_indicators
+from mcp_aktools.shared.normalize import normalize_price_df
 from mcp_aktools.shared.utils import ak_cache
 
 # 上海金交所品种映射
@@ -41,7 +42,13 @@ def pm_spot_prices(
     """获取上海金交所现货历史价格"""
     df = ak_cache(ak.spot_hist_sge, symbol=symbol)
     if df is None or df.empty:
-        return pd.DataFrame()
+        return normalize_price_df(
+            None,
+            {},
+            source="akshare",
+            currency="CNY",
+            limit=limit,
+        )
 
     df = df.tail(limit + 62)
     df.sort_values("日期", inplace=True)
@@ -54,26 +61,33 @@ def pm_spot_prices(
 
     add_technical_indicators(df, df["收盘价"], df["最低价"], df["最高价"])
 
-    columns = [
-        "日期",
-        "开盘价",
-        "收盘价",
-        "最高价",
-        "最低价",
-        "成交量",
-        "MACD",
-        "DIF",
-        "DEA",
-        "KDJ.K",
-        "KDJ.D",
-        "KDJ.J",
-        "RSI",
-        "BOLL.U",
-        "BOLL.M",
-        "BOLL.L",
-    ]
-    all_lines = df.to_csv(columns=columns, index=False, float_format="%.2f").strip().split("\n")
-    return "\n".join([all_lines[0], *all_lines[-limit:]])
+    return normalize_price_df(
+        df,
+        {
+            "date": "日期",
+            "open": "开盘价",
+            "high": "最高价",
+            "low": "最低价",
+            "close": "收盘价",
+            "volume": "成交量",
+        },
+        source="akshare",
+        currency="CNY",
+        limit=limit,
+        float_format="%.2f",
+        indicator_map={
+            "macd": "MACD",
+            "dif": "DIF",
+            "dea": "DEA",
+            "kdj_k": "KDJ.K",
+            "kdj_d": "KDJ.D",
+            "kdj_j": "KDJ.J",
+            "rsi": "RSI",
+            "boll_u": "BOLL.U",
+            "boll_m": "BOLL.M",
+            "boll_l": "BOLL.L",
+        },
+    )
 
 
 @mcp.tool(
