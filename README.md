@@ -127,15 +127,15 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 > 覆盖 A股/港股/美股 的行情与基本面
 
 - **基础**: `search` (搜代码), `stock_info` (个股信息)
-- **行情**: `stock_prices` (历史K线), `stock_zt_pool_em` (涨停池)
+- **行情**: `market_prices` (历史K线), `stock_zt_pool_em` (涨停池)
 - **数据**: `stock_indicators` (财务指标), `stock_lhb` (龙虎榜), `northbound_funds` (北向资金)
 - **分析**: `sector_valuation` (行业估值), `sector_rotation` (板块轮动), `market_anomaly_scan` (异动扫描)
 
 ### ₿ 加密货币 (Crypto)
 > 接入 OKX/Binance 的深度数据
 
-- **行情**: `okx_prices` (K线), `draw_crypto_chart` (字符图)
-- **情绪**: `fear_greed_index` (恐贪指数), `okx_loan_ratios` (多空比)
+- **行情**: `crypto_prices` (K线), `draw_crypto_chart` (字符图)
+- **情绪**: `fear_greed_index` (恐贪指数), `crypto_sentiment_metrics` (情绪指标)
 - **衍生品**: `okx_funding_rate` (资金费率), `okx_open_interest` (持仓量)
 - **智能**: `binance_ai_report` (AI研报), `crypto_composite_diagnostic` (综合诊断)
 
@@ -149,7 +149,7 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 ### 💱 外汇 (Forex)
 > 全球汇率行情与历史数据
 
-- **行情**: `fx_spot_rates` (即期汇率), `fx_cross_rates` (交叉汇率)
+- **行情**: `fx_rates` (即期汇率/交叉汇率)
 - **历史**: `fx_history` (历史汇率)
 
 ### 🏗️ 期货 (Futures)
@@ -166,7 +166,7 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 - **基础**: `fund_info` (基本信息), `fund_ranking` (基金排行)
 - **业绩**: `fund_nav` (净值走势)
 - **持仓**: `fund_holdings` (重仓股)
-- **ETF**: `etf_prices` (二级市场行情)
+- **ETF**: `market_prices` (asset=etf)
 
 ### 🌍 宏观经济 (Macro)
 > 全球与中国宏观经济指标
@@ -198,7 +198,7 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 |--------|----------|
 | `search` | 根据股票名称、公司名称等关键词查找股票代码 |
 | `stock_info` | 根据股票代码和市场获取股票基本信息 |
-| `stock_prices` | 获取股票历史价格及技术指标 (MACD/RSI/KDJ/BOLL) |
+| `market_prices` | 获取市场历史价格及技术指标 (MACD/RSI/KDJ/BOLL) |
 | `stock_news` | 获取指定个股最近新闻动态 |
 | `stock_news_global` | 获取最新的全球财经快讯 |
 | `stock_indicators_a` | 获取A股财务报告关键指标 |
@@ -219,9 +219,8 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 
 | 工具名 | 功能说明 |
 |--------|----------|
-| `okx_prices` | 获取OKX加密货币历史K线数据及技术指标 |
-| `okx_loan_ratios` | 获取加密货币杠杆多空比 |
-| `okx_taker_volume` | 获取加密货币主动买卖交易量 |
+| `crypto_prices` | 获取OKX加密货币历史K线数据及技术指标 |
+| `crypto_sentiment_metrics` | 获取加密货币情绪指标 |
 | `okx_funding_rate` | 获取永续合约资金费率 |
 | `okx_open_interest` | 获取永续合约持仓量数据 |
 | `binance_ai_report` | 获取币安AI分析报告 (推荐) |
@@ -246,9 +245,8 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 
 | 工具名 | 功能说明 |
 |--------|----------|
-| `fx_spot_rates` | 获取主要货币对实时汇率 (USD/EUR/JPY/GBP等) |
+| `fx_rates` | 获取主要货币对实时汇率 (USD/EUR/JPY/GBP等) |
 | `fx_history` | 获取指定货币对历史汇率数据 |
-| `fx_cross_rates` | 获取主要货币交叉汇率矩阵 |
 
 ### 🏗️ 期货
 
@@ -267,7 +265,7 @@ AkTools Pro 提供了 65 个专业工具，分为以下核心模块：
 | `fund_nav` | 获取基金历史净值数据 |
 | `fund_holdings` | 获取基金股票持仓明细 |
 | `fund_ranking` | 获取基金排行榜 (按类型/收益率筛选) |
-| `etf_prices` | 获取ETF基金历史价格数据 |
+| `market_prices` | 获取ETF基金历史价格数据 (asset=etf) |
 
 ### 🌍 宏观经济
 
@@ -309,7 +307,7 @@ User: 帮我分析一下 贵州茅台(600519) 的近期走势
 
 Assistant: 好的，正在为您获取 贵州茅台(600519) 的综合数据...
 
-[调用 stock_prices, stock_indicators, stock_news...]
+[调用 market_prices, stock_indicators, stock_news...]
 
 📊 **贵州茅台 (600519) 技术面分析**
 
