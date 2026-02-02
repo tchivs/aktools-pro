@@ -1,5 +1,6 @@
 import json
 import time
+from io import StringIO
 from typing import Any
 
 import pandas as pd
@@ -10,6 +11,7 @@ from pydantic import Field
 from ..server import mcp
 from ..shared.constants import BINANCE_BASE_URL, OKX_BASE_URL, USER_AGENT
 from ..shared.indicators import add_technical_indicators
+from ..shared.normalize import normalize_price_df
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
@@ -39,31 +41,38 @@ def _safe_int(value: Any, default: int = 0) -> int:
 
 @mcp.tool(
     title="获取加密货币历史价格",
-    description="获取OKX加密货币的历史K线数据，包括价格、交易量和技术指标",
+    description="获取OKX加密货币的历史K线数据，输出标准化行情字段",
 )
-def okx_prices(
-    instId: str = Field("BTC-USDT", description="产品ID，格式: BTC-USDT"),
-    bar: str = Field(
+def crypto_prices(
+    symbol: str = Field("BTC-USDT", description="产品ID，格式: BTC-USDT"),
+    period: str = Field(
         "1H",
         description="K线时间粒度，仅支持: [1m/3m/5m/15m/30m/1H/2H/4H/6H/12H/1D/2D/3D/1W/1M/3M] 除分钟为小写m外,其余均为大写",
     ),
     limit: int = Field(100, description="返回数量(int)，最大300，最小建议30", strict=False),
 ):
-    if not bar.endswith("m"):
-        bar = bar.upper()
+    if not period.endswith("m"):
+        period = period.upper()
     res = requests.get(
         f"{OKX_BASE_URL}/api/v5/market/candles",
         params={
-            "instId": instId,
-            "bar": bar,
+            "instId": symbol,
+            "bar": period,
             "limit": max(300, limit + 62),
         },
         timeout=20,
     )
     data = res.json() or {}
     dfs = pd.DataFrame(data.get("data", []))
+    currency = symbol.split("-")[-1] if "-" in symbol else "USDT"
     if dfs.empty:
-        return pd.DataFrame()
+        return normalize_price_df(
+            None,
+            {},
+            source="okx",
+            currency=currency,
+            limit=limit,
+        )
     dfs.columns = ["时间", "开盘", "最高", "最低", "收盘", "成交量", "成交额", "成交额USDT", "K线已完结"]
     dfs.sort_values("时间", inplace=True)
     dfs["时间"] = pd.to_numeric(dfs["时间"], errors="coerce")
@@ -75,38 +84,46 @@ def okx_prices(
     dfs["成交量"] = pd.to_numeric(dfs["成交量"], errors="coerce")
     dfs["成交额"] = pd.to_numeric(dfs["成交额"], errors="coerce")
     add_technical_indicators(dfs, dfs["收盘"], dfs["最低"], dfs["最高"])
-    columns = [
-        "时间",
-        "开盘",
-        "收盘",
-        "最高",
-        "最低",
-        "成交量",
-        "成交额",
-        "MACD",
-        "DIF",
-        "DEA",
-        "KDJ.K",
-        "KDJ.D",
-        "KDJ.J",
-        "RSI",
-        "BOLL.U",
-        "BOLL.M",
-        "BOLL.L",
-    ]
-    all_lines = dfs.to_csv(columns=columns, index=False, float_format="%.2f").strip().split("\n")
-    return "\n".join([all_lines[0], *all_lines[-limit:]])
+    return normalize_price_df(
+        dfs,
+        {
+            "date": "时间",
+            "open": "开盘",
+            "high": "最高",
+            "low": "最低",
+            "close": "收盘",
+            "volume": "成交量",
+            "amount": "成交额",
+        },
+        source="okx",
+        currency=currency,
+        limit=limit,
+        float_format="%.4f",
+        indicator_map={
+            "macd": "MACD",
+            "dif": "DIF",
+            "dea": "DEA",
+            "kdj_k": "KDJ.K",
+            "kdj_d": "KDJ.D",
+            "kdj_j": "KDJ.J",
+            "rsi": "RSI",
+            "boll_u": "BOLL.U",
+            "boll_m": "BOLL.M",
+            "boll_l": "BOLL.L",
+        },
+    )
 
 
 @mcp.tool(
-    title="获取加密货币杠杆多空比",
-    description="获取OKX加密货币借入计价货币与借入交易货币的累计数额比值",
+    title="获取加密货币情绪指标",
+    description="获取OKX加密货币杠杆多空比与主动买卖数据",
 )
-def okx_loan_ratios(
+def crypto_sentiment_metrics(
     symbol: str = Field("BTC", description="币种，格式: BTC 或 ETH"),
     period: str = Field("1h", description="时间粒度，仅支持: [5m/1H/1D] 注意大小写，仅分钟为小写m"),
+    inst_type: str = Field("SPOT", description="产品类型 SPOT:现货 CONTRACTS:衍生品"),
 ):
-    res = requests.get(
+    loan_res = requests.get(
         f"{OKX_BASE_URL}/api/v5/rubik/stat/margin/loan-ratio",
         params={
             "ccy": symbol,
@@ -114,45 +131,42 @@ def okx_loan_ratios(
         },
         timeout=20,
     )
-    data = res.json() or {}
-    dfs = pd.DataFrame(data.get("data", []))
-    if dfs.empty:
-        return pd.DataFrame()
-    dfs.columns = ["时间", "多空比"]
-    dfs["时间"] = pd.to_numeric(dfs["时间"], errors="coerce")
-    dfs["时间"] = pd.to_datetime(dfs["时间"], errors="coerce", unit="ms")
-    dfs["多空比"] = pd.to_numeric(dfs["多空比"], errors="coerce")
-    return dfs.to_csv(index=False, float_format="%.2f").strip()
-
-
-@mcp.tool(
-    title="获取加密货币主动买卖情况",
-    description="获取OKX加密货币主动买入和卖出的交易量",
-)
-def okx_taker_volume(
-    symbol: str = Field("BTC", description="币种，格式: BTC 或 ETH"),
-    period: str = Field("1h", description="时间粒度，仅支持: [5m/1H/1D] 注意大小写，仅分钟为小写m"),
-    instType: str = Field("SPOT", description="产品类型 SPOT:现货 CONTRACTS:衍生品"),
-):
-    res = requests.get(
+    taker_res = requests.get(
         f"{OKX_BASE_URL}/api/v5/rubik/stat/taker-volume",
         params={
             "ccy": symbol,
             "period": period,
-            "instType": instType,
+            "instType": inst_type,
         },
         timeout=20,
     )
-    data = res.json() or {}
-    dfs = pd.DataFrame(data.get("data", []))
-    if dfs.empty:
+    loan_data = pd.DataFrame((loan_res.json() or {}).get("data", []))
+    taker_data = pd.DataFrame((taker_res.json() or {}).get("data", []))
+    if loan_data.empty and taker_data.empty:
         return pd.DataFrame()
-    dfs.columns = ["时间", "卖出量", "买入量"]
-    dfs["时间"] = pd.to_numeric(dfs["时间"], errors="coerce")
-    dfs["时间"] = pd.to_datetime(dfs["时间"], errors="coerce", unit="ms")
-    dfs["卖出量"] = pd.to_numeric(dfs["卖出量"], errors="coerce")
-    dfs["买入量"] = pd.to_numeric(dfs["买入量"], errors="coerce")
-    return dfs.to_csv(index=False, float_format="%.2f").strip()
+
+    if not loan_data.empty:
+        loan_data.columns = ["时间", "多空比"]
+        loan_data["时间"] = pd.to_numeric(loan_data["时间"], errors="coerce")
+        loan_data["时间"] = pd.to_datetime(loan_data["时间"], errors="coerce", unit="ms")
+        loan_data["多空比"] = pd.to_numeric(loan_data["多空比"], errors="coerce")
+
+    if not taker_data.empty:
+        taker_data.columns = ["时间", "卖出量", "买入量"]
+        taker_data["时间"] = pd.to_numeric(taker_data["时间"], errors="coerce")
+        taker_data["时间"] = pd.to_datetime(taker_data["时间"], errors="coerce", unit="ms")
+        taker_data["卖出量"] = pd.to_numeric(taker_data["卖出量"], errors="coerce")
+        taker_data["买入量"] = pd.to_numeric(taker_data["买入量"], errors="coerce")
+
+    if loan_data.empty:
+        merged = taker_data
+    elif taker_data.empty:
+        merged = loan_data
+    else:
+        merged = pd.merge(loan_data, taker_data, on="时间", how="outer")
+
+    merged.sort_values("时间", inplace=True)
+    return merged.to_csv(index=False, float_format="%.2f").strip()
 
 
 @mcp.tool(
@@ -214,15 +228,11 @@ async def crypto_composite_diagnostic(
 
     if ctx:
         await ctx.report_progress(25, 100, "获取价格数据...")
-    price_data = okx_prices.fn(instId=inst_id, bar="4H", limit=10)
+    price_data = crypto_prices.fn(symbol=inst_id, period="4H", limit=10)
 
     if ctx:
-        await ctx.report_progress(50, 100, "获取杠杆多空比...")
-    loan_data = okx_loan_ratios.fn(symbol=symbol, period="1H")
-
-    if ctx:
-        await ctx.report_progress(75, 100, "获取主动买卖量...")
-    taker_data = okx_taker_volume.fn(symbol=symbol, period="1H", instType="SPOT")
+        await ctx.report_progress(50, 100, "获取情绪指标...")
+    sentiment_data = crypto_sentiment_metrics.fn(symbol=symbol, period="1H", inst_type="SPOT")
     ai_report = binance_ai_report.fn(symbol=symbol)
 
     if ctx:
@@ -231,8 +241,7 @@ async def crypto_composite_diagnostic(
     return (
         f"--- 加密货币综合诊断: {symbol} ---\n\n"
         f"[近期价格 4H]\n{price_data}\n\n"
-        f"[杠杆多空比]\n{loan_data}\n\n"
-        f"[主动买卖量]\n{taker_data}\n\n"
+        f"[情绪指标]\n{sentiment_data}\n\n"
         f"[币安AI报告]\n{ai_report}"
     )
 
@@ -246,22 +255,26 @@ def draw_crypto_chart(
     bar: str = Field("1D", description="K线周期: 1H/4H/1D"),
 ):
     inst_id = f"{symbol}-USDT"
-    data = okx_prices.fn(instId=inst_id, bar=bar, limit=20)
+    data = crypto_prices.fn(symbol=inst_id, period=bar, limit=20)
     if not isinstance(data, str) or not data:
         return "数据不足，无法绘图"
 
-    lines = data.strip().split("\n")[1:]
-    if not lines:
+    try:
+        dfs = pd.read_csv(StringIO(data))
+    except Exception:
+        return "数据不足，无法绘图"
+
+    if dfs.empty or "close" not in dfs.columns:
         return "数据不足，无法绘图"
 
     prices = []
-    for line in lines:
-        parts = line.split(",")
-        if len(parts) >= 3:
-            try:
-                prices.append(float(parts[2]))
-            except ValueError:
-                continue
+    for value in dfs["close"].to_list():
+        if pd.isna(value):
+            continue
+        try:
+            prices.append(float(value))
+        except (TypeError, ValueError):
+            continue
 
     if len(prices) < 3:
         return "数据不足，无法绘图"
@@ -298,7 +311,7 @@ def backtest_crypto_strategy(
     from io import StringIO
 
     inst_id = f"{symbol}-USDT"
-    data = okx_prices.fn(instId=inst_id, bar=bar, limit=limit)
+    data = crypto_prices.fn(symbol=inst_id, period=bar, limit=limit)
 
     if not isinstance(data, str) or not data:
         return f"未找到可回测数据: {symbol}"
@@ -308,25 +321,25 @@ def backtest_crypto_strategy(
     except Exception:
         return "价格数据解析失败"
 
-    if dfs is None or dfs.empty or "收盘" not in dfs.columns:
+    if dfs is None or dfs.empty or "close" not in dfs.columns:
         return "数据不足，无法回测"
 
-    close = pd.to_numeric(dfs["收盘"], errors="coerce")
-    dfs = dfs.assign(收盘=close).dropna(subset=["收盘"])
+    close = pd.to_numeric(dfs["close"], errors="coerce")
+    dfs = dfs.assign(close=close).dropna(subset=["close"])
     if dfs.empty:
         return "数据不足，无法回测"
 
     strategy_key = (strategy or "").strip().upper()
     if strategy_key == "SMA":
         short_window, long_window = 5, 20
-        dfs["ma_short"] = dfs["收盘"].rolling(short_window).mean()
-        dfs["ma_long"] = dfs["收盘"].rolling(long_window).mean()
+        dfs["ma_short"] = dfs["close"].rolling(short_window).mean()
+        dfs["ma_long"] = dfs["close"].rolling(long_window).mean()
         signal = pd.Series((dfs["ma_short"] > dfs["ma_long"]).astype(int), index=dfs.index)
         strategy_desc = f"SMA{short_window}/{long_window}"
     elif strategy_key == "RSI":
-        if "RSI" not in dfs.columns:
+        if "rsi" not in dfs.columns:
             return "数据缺少 RSI 指标，无法回测"
-        rsi = pd.Series(pd.to_numeric(dfs["RSI"], errors="coerce"), index=dfs.index)
+        rsi = pd.Series(pd.to_numeric(dfs["rsi"], errors="coerce"), index=dfs.index)
         positions = []
         position = 0
         for value in rsi.to_list():
@@ -341,16 +354,16 @@ def backtest_crypto_strategy(
         signal = pd.Series(positions, index=dfs.index)
         strategy_desc = "RSI(30/70)"
     elif strategy_key == "MACD":
-        if "DIF" not in dfs.columns or "DEA" not in dfs.columns:
+        if "dif" not in dfs.columns or "dea" not in dfs.columns:
             return "数据缺少 MACD 指标，无法回测"
-        dif = pd.Series(pd.to_numeric(dfs["DIF"], errors="coerce"), index=dfs.index)
-        dea = pd.Series(pd.to_numeric(dfs["DEA"], errors="coerce"), index=dfs.index)
+        dif = pd.Series(pd.to_numeric(dfs["dif"], errors="coerce"), index=dfs.index)
+        dea = pd.Series(pd.to_numeric(dfs["dea"], errors="coerce"), index=dfs.index)
         signal = pd.Series((dif > dea).astype(int), index=dfs.index)
         strategy_desc = "MACD(DIF/DEA)"
     else:
         return f"不支持的策略类型: {strategy}"
 
-    returns = dfs["收盘"].pct_change().fillna(0)
+    returns = dfs["close"].pct_change().fillna(0)
     position = signal.shift(1).fillna(0)
     strat_returns = returns.mul(position)
     equity = (1 + strat_returns).cumprod()
