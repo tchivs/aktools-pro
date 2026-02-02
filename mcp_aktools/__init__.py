@@ -1,6 +1,6 @@
 import argparse
-import json
 import os
+from typing import Literal, cast
 
 # 导入 main 需要用到的中间件
 from starlette.middleware.cors import CORSMiddleware
@@ -9,6 +9,19 @@ from starlette.middleware.cors import CORSMiddleware
 from . import prompts, resources
 from .server import mcp
 from .tools import analysis, crypto, forex, market, portfolio, precious_metals, stocks
+
+__all__ = [
+    "analysis",
+    "crypto",
+    "forex",
+    "market",
+    "mcp",
+    "portfolio",
+    "precious_metals",
+    "prompts",
+    "resources",
+    "stocks",
+]
 
 
 def _run_inspect():
@@ -46,7 +59,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
 
     # inspect 子命令
-    inspect_parser = subparsers.add_parser("inspect", help="List all registered tools, resources and prompts")
+    subparsers.add_parser("inspect", help="List all registered tools, resources and prompts")
 
     # 运行服务器参数 (作为默认行为)
     parser.add_argument("--http", action="store_true", help="Use streamable HTTP mode instead of stdio")
@@ -60,8 +73,9 @@ def main():
         return
 
     mode = os.getenv("TRANSPORT") or ("http" if args.http else None)
-    if mode in ["http", "sse"]:
-        app = mcp.http_app(transport=mode)
+    if mode in ["http", "sse", "streamable-http"]:
+        transport = cast(Literal["http", "sse", "streamable-http"], mode)
+        app = mcp.http_app(transport=transport)
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -71,7 +85,7 @@ def main():
             expose_headers=["mcp-session-id", "mcp-protocol-version"],
             max_age=86400,
         )
-        mcp.run(transport=mode, host=args.host, port=args.port)
+        mcp.run(transport=transport, host=args.host, port=args.port)
     else:
         mcp.run()
 
