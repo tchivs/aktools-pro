@@ -49,6 +49,26 @@ class TestPmSpotPrices:
             assert isinstance(result, str)
             assert "error" in result
 
+    def test_handles_english_column_names(self):
+        """Test handling of English column names from newer akshare API."""
+        mock_df = pd.DataFrame(
+            {
+                "date": ["2025-01-01", "2025-01-02", "2025-01-03"],
+                "open": [500.0, 501.0, 502.0],
+                "close": [501.0, 502.0, 503.0],
+                "high": [502.0, 503.0, 504.0],
+                "low": [499.0, 500.0, 501.0],
+            }
+        )
+
+        with mock.patch("mcp_aktools.tools.precious_metals.ak_cache", return_value=mock_df):
+            result = pm_spot_prices_fn(symbol="Au99.99", limit=10)
+
+            assert isinstance(result, str)
+            assert "date" in result
+            assert "open" in result
+            assert "close" in result
+
 
 class TestPmInternationalPrices:
     """Test the pm_international_prices tool."""

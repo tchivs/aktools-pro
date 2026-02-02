@@ -51,26 +51,39 @@ def pm_spot_prices(
         )
 
     df = df.tail(limit + 62)
-    df.sort_values("日期", inplace=True)
-    df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
-    df["开盘价"] = pd.to_numeric(df["开盘价"], errors="coerce")
-    df["最高价"] = pd.to_numeric(df["最高价"], errors="coerce")
-    df["最低价"] = pd.to_numeric(df["最低价"], errors="coerce")
-    df["收盘价"] = pd.to_numeric(df["收盘价"], errors="coerce")
-    df["成交量"] = pd.to_numeric(df["成交量"], errors="coerce")
 
-    add_technical_indicators(df, df["收盘价"], df["最低价"], df["最高价"])
+    uses_chinese_cols = "日期" in df.columns
+    date_col = "日期" if uses_chinese_cols else "date"
+    open_col = "开盘价" if uses_chinese_cols else "open"
+    high_col = "最高价" if uses_chinese_cols else "high"
+    low_col = "最低价" if uses_chinese_cols else "low"
+    close_col = "收盘价" if uses_chinese_cols else "close"
+    volume_col = "成交量" if uses_chinese_cols else "volume"
+
+    df.sort_values(date_col, inplace=True)
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+    df[open_col] = pd.to_numeric(df[open_col], errors="coerce")
+    df[high_col] = pd.to_numeric(df[high_col], errors="coerce")
+    df[low_col] = pd.to_numeric(df[low_col], errors="coerce")
+    df[close_col] = pd.to_numeric(df[close_col], errors="coerce")
+    if volume_col in df.columns:
+        df[volume_col] = pd.to_numeric(df[volume_col], errors="coerce")
+
+    add_technical_indicators(df, df[close_col], df[low_col], df[high_col])
+
+    column_map: dict[str, str] = {
+        "date": date_col,
+        "open": open_col,
+        "high": high_col,
+        "low": low_col,
+        "close": close_col,
+    }
+    if volume_col in df.columns:
+        column_map["volume"] = volume_col
 
     return normalize_price_df(
         df,
-        {
-            "date": "日期",
-            "open": "开盘价",
-            "high": "最高价",
-            "low": "最低价",
-            "close": "收盘价",
-            "volume": "成交量",
-        },
+        column_map,
         source="akshare",
         currency="CNY",
         limit=limit,
